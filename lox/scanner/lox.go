@@ -1,4 +1,4 @@
-package main
+package scanner
 
 import (
 	"bufio"
@@ -6,25 +6,11 @@ import (
 	"os"
 )
 
-func main() {
-	lox := Lox{false}
-	cmdArgs := os.Args[1:]
-
-	if len(cmdArgs) == 0 {
-		lox.runPrompt()
-	} else if len(cmdArgs) == 1 {
-		lox.runFile(cmdArgs[0])
-	} else {
-		fmt.Println("Usage: jlox [script]")
-		os.Exit(64)
-	}
-}
-
 type Lox struct {
 	hadError bool
 }
 
-func (l *Lox) runFile(source string) {
+func (l *Lox) RunFile(source string) {
 	f, err := os.ReadFile(source)
 	if err != nil {
 		panic("Error!")
@@ -35,7 +21,7 @@ func (l *Lox) runFile(source string) {
 	}
 }
 
-func (l *Lox) runPrompt() {
+func (l *Lox) RunPrompt() {
 	fmt.Print("> ")
 	// Handles Ctrl-D for us
 	s := bufio.NewScanner(os.Stdin)
@@ -49,7 +35,7 @@ func (l *Lox) runPrompt() {
 
 func (l *Lox) run(source string) {
 	scanner := NewScanner(source)
-	tokens := scanner.scanTokens(l)
+	tokens := scanner.ScanTokens(l)
 	for _, t := range tokens {
 		fmt.Println(t)
 	}

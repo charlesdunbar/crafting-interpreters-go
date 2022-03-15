@@ -1,4 +1,4 @@
-module github.com/charlesdunbar/jlox-go
+module github.com/charlesdunbar/lox-go
 
 go 1.17
 

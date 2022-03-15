@@ -1,4 +1,4 @@
-package main
+package scanner
 
 type Scanner struct {
 	source  string
@@ -18,16 +18,18 @@ func NewScanner(source string) *Scanner {
 	}
 }
 
-func (s *Scanner) scanTokens(l *Lox) []Token {
+func (s *Scanner) ScanTokens(l *Lox) []Token {
 	for !s.isAtEnd() {
+		//fmt.Printf("Start - %d and Current - %d\n", s.start, s.current)
 		s.start = s.current
+		//fmt.Println("Scanning!")
 		s.scanToken(l)
 	}
 	s.tokens = append(s.tokens, Token{EOF, "", nil, s.line})
 	return s.tokens
 }
 
-func (s Scanner) scanToken(l *Lox) {
+func (s *Scanner) scanToken(l *Lox) {
 	c := s.advance()
 	switch c {
 	case '(':
@@ -74,6 +76,20 @@ func (s Scanner) scanToken(l *Lox) {
 		} else {
 			s.addToken(GREATER)
 		}
+	case '/':
+		if s.match('/') {
+			for s.peek() != '\n' && !s.isAtEnd() {
+				s.advance()
+			}
+		} else {
+			s.addToken(SLASH)
+		}
+	case ' ':
+	case '\r':
+	case '\t':
+	case '\n':
+		s.line++
+
 	default:
 		l.error(s.line, "Unexpected character.")
 	}
@@ -90,26 +106,31 @@ func (s *Scanner) match(expected byte) bool {
 	return true
 }
 
-func (s Scanner) isAtEnd() bool {
+func (s *Scanner) peek() byte {
+	if s.isAtEnd() {
+		return '\x00'
+	}
+	return s.source[s.current]
+}
+
+func (s *Scanner) isAtEnd() bool {
 	return s.current >= len(s.source)
 }
 
 func (s *Scanner) advance() byte {
 	c := s.source[s.current]
+	//fmt.Printf("Advance current before: %d\n", s.current)
 	s.current++
+	//fmt.Printf("Advance current after: %d\n", s.current)
 	return c
 }
 
-func (s Scanner) addToken(l_type TokenType, literal ...interface{}) {
+func (s *Scanner) addToken(l_type TokenType, literal ...interface{}) {
 	if len(literal) == 0 {
-		s.addTokenType(l_type)
+		s.addTokenTypeObject(l_type, nil)
 	} else {
 		s.addTokenTypeObject(l_type, literal[0])
 	}
-}
-
-func (s Scanner) addTokenType(l_type TokenType) {
-	s.addTokenTypeObject(l_type, nil)
 }
 
 func (s *Scanner) addTokenTypeObject(l_type TokenType, literal interface{}) {
