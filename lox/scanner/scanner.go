@@ -1,11 +1,14 @@
 package scanner
 
+import "strconv"
+
 type Scanner struct {
-	source  string
-	tokens  []Token
-	start   int
-	current int
-	line    int
+	source   string
+	tokens   []Token
+	start    int
+	current  int
+	line     int
+	keywords map[string]TokenType
 }
 
 func NewScanner(source string) *Scanner {
@@ -15,6 +18,24 @@ func NewScanner(source string) *Scanner {
 		start:   0,
 		current: 0,
 		line:    1,
+		keywords: map[string]TokenType{
+			"and":    AND,
+			"class":  CLASS,
+			"else":   ELSE,
+			"false":  FALSE,
+			"for":    FOR,
+			"fun":    FUN,
+			"if":     IF,
+			"nil":    NIL,
+			"or":     OR,
+			"print":  PRINT,
+			"return": RETURN,
+			"super":  SUPER,
+			"this":   THIS,
+			"true":   TRUE,
+			"var":    VAR,
+			"while":  WHILE,
+		},
 	}
 }
 
@@ -90,9 +111,92 @@ func (s *Scanner) scanToken(l *Lox) {
 	case '\n':
 		s.line++
 
+	case '"':
+		s.string(l)
+
 	default:
-		l.error(s.line, "Unexpected character.")
+		if s.isDigit(c) {
+			s.number()
+		} else if s.isAlpha(c) {
+			s.identifier()
+		} else {
+			l.error(s.line, "Unexpected character.")
+		}
 	}
+}
+
+func (s *Scanner) identifier() {
+	for s.isAlphaNumeric(s.peek()) {
+		s.advance()
+	}
+
+	text := s.source[s.start:s.current]
+	if l_type, ok := s.keywords[text]; ok {
+		s.addToken(l_type)
+	} else {
+		s.addToken(IDENTIFIER)
+	}
+}
+
+func (s *Scanner) isAlpha(c byte) bool {
+	return ((c >= 'a' && c <= 'z') ||
+		(c >= 'A' && c <= 'Z') ||
+		(c == '_'))
+}
+
+func (s *Scanner) isAlphaNumeric(c byte) bool {
+	return s.isAlpha(c) || s.isDigit(c)
+}
+
+func (s *Scanner) number() {
+	for s.isDigit(s.peek()) {
+		s.advance()
+	}
+
+	// Look for a fractional part.
+	if (s.peek() == '.') && s.isDigit(s.peekNext()) {
+		s.advance()
+
+		for s.isDigit(s.peek()) {
+			s.advance()
+		}
+	}
+
+	if n, err := strconv.ParseFloat(s.source[s.start:s.current], 64); err == nil {
+		s.addToken(NUMBER, n)
+	}
+
+}
+
+func (s *Scanner) peekNext() byte {
+	if s.current+1 >= len(s.source) {
+		return '\x00'
+	}
+	return s.source[s.current+1]
+}
+
+func (s *Scanner) isDigit(c byte) bool {
+	return c >= '0' && c <= '9'
+}
+
+func (s *Scanner) string(l *Lox) {
+	for s.peek() != '"' && !s.isAtEnd() {
+		if s.peek() == '\n' {
+			s.line++
+		}
+		s.advance()
+	}
+
+	if s.isAtEnd() {
+		l.error(s.line, "Unterminated string.")
+		return
+	}
+
+	s.advance() // The closing ".
+
+	// Trim the surrounding quotes.
+	value := s.source[s.start+1 : s.current-1]
+	s.addToken(STRING, value)
 }
 
 func (s *Scanner) match(expected byte) bool {
