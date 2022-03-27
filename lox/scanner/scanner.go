@@ -1,6 +1,8 @@
 package scanner
 
-import "strconv"
+import (
+	"strconv"
+)
 
 type Scanner struct {
 	source   string
@@ -41,9 +43,7 @@ func NewScanner(source string) *Scanner {
 
 func (s *Scanner) ScanTokens(l *Lox) []Token {
 	for !s.isAtEnd() {
-		//fmt.Printf("Start - %d and Current - %d\n", s.start, s.current)
 		s.start = s.current
-		//fmt.Println("Scanning!")
 		s.scanToken(l)
 	}
 	s.tokens = append(s.tokens, Token{EOF, "", nil, s.line})
@@ -102,6 +102,9 @@ func (s *Scanner) scanToken(l *Lox) {
 			for s.peek() != '\n' && !s.isAtEnd() {
 				s.advance()
 			}
+		} else if s.match('*') {
+			s.multiComment(l)
+
 		} else {
 			s.addToken(SLASH)
 		}
@@ -148,6 +151,9 @@ func (s *Scanner) isAlphaNumeric(c byte) bool {
 	return s.isAlpha(c) || s.isDigit(c)
 }
 
+/*
+	number adds a token of a number, including anything after a decimal place
+*/
 func (s *Scanner) number() {
 	for s.isDigit(s.peek()) {
 		s.advance()
@@ -168,6 +174,11 @@ func (s *Scanner) number() {
 
 }
 
+/*
+	peekNext returns the byte of the next character,
+	or a \0 if the next character is past the length of
+	the line
+*/
 func (s *Scanner) peekNext() byte {
 	if s.current+1 >= len(s.source) {
 		return '\x00'
@@ -199,6 +210,23 @@ func (s *Scanner) string(l *Lox) {
 	s.addToken(STRING, value)
 }
 
+func (s *Scanner) multiComment(l *Lox) {
+	for !(s.peek() == '*' && s.peekNext() == '/') && !s.isAtEnd() {
+		if s.peek() == '\n' {
+			s.line++
+		}
+		s.advance()
+	}
+
+	if s.isAtEnd() {
+		l.error(s.line, "Unterminated multiline comment.")
+		return
+	}
+
+	s.advance() // The closing *.
+	s.advance() // The closing /.
+}
+
 func (s *Scanner) match(expected byte) bool {
 	if s.isAtEnd() {
 		return false
@@ -210,6 +238,13 @@ func (s *Scanner) match(expected byte) bool {
 	return true
 }
 
+/*
+	peek returns the next byte of the source,
+	returning \0 if scanned past it
+
+	it does not advance the Scanner's current position,
+	like advance() does
+*/
 func (s *Scanner) peek() byte {
 	if s.isAtEnd() {
 		return '\x00'
@@ -217,15 +252,22 @@ func (s *Scanner) peek() byte {
 	return s.source[s.current]
 }
 
+/*
+	isAtEnd returns true if the Scanner's
+	current value is greater than or equal
+	to the length of the source
+*/
 func (s *Scanner) isAtEnd() bool {
 	return s.current >= len(s.source)
 }
 
+/*
+	advance returns the current byte, then advances
+	the Scanner's current position.
+*/
 func (s *Scanner) advance() byte {
 	c := s.source[s.current]
-	//fmt.Printf("Advance current before: %d\n", s.current)
 	s.current++
-	//fmt.Printf("Advance current after: %d\n", s.current)
 	return c
 }
 
