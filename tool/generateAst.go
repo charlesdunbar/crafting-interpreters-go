@@ -52,5 +52,5 @@ func defineType(writer *os.File, baseName, className, fieldList string) {
 		l_type := strings.Split(f, " ")[1]
 		writer.WriteString("\t" + name + " " + l_type + "\n")
 	}
-	writer.WriteString("}\n")
+	writer.WriteString("}\n\n")
 }
