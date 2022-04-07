@@ -1,4 +1,4 @@
-package scanner
+package main
 
 //go:generate stringer -type=TokenType
 type TokenType int
