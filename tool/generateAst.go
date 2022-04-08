@@ -34,7 +34,7 @@ func defineAst(outputDir string, baseName string, types []string) {
 	defer f.Close()
 
 	f.WriteString("package main\n\n")
-	f.WriteString("type " + baseName + " struct {}\n\n")
+	f.WriteString("type " + baseName + " interface {\n\tString() string\n}\n\n")
 	f.WriteString("")
 	for _, t := range types {
 		className := strings.TrimSpace(strings.Split(t, ":")[0])
@@ -45,7 +45,7 @@ func defineAst(outputDir string, baseName string, types []string) {
 
 func defineType(writer *os.File, baseName, className, fieldList string) {
 	writer.WriteString("type " + className + " struct {\n")
-	writer.WriteString("	Expr\n")
+	//writer.WriteString("	Expr\n")
 	fields := strings.Split(fieldList, ", ")
 	for _, f := range fields {
 		name := strings.Split(f, " ")[0]

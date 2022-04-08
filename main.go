@@ -10,6 +10,7 @@ func main() {
 	cmdArgs := os.Args[1:]
 
 	if len(cmdArgs) == 0 {
+		test()
 		lox.RunPrompt()
 	} else if len(cmdArgs) == 1 {
 		lox.RunFile(cmdArgs[0])
