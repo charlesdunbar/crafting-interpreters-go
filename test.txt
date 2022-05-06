@@ -1,5 +1,5 @@
-"I am a test file"
-3 + 7 = 10
+"I am a test file";
+3 + 7 = 10;
 /* I am a comment
 that spans
 multiple lines
@@ -8,4 +8,4 @@ still going /
 *
 /
 wow that's long*/
-abc123
+abc123;
