@@ -6,11 +6,11 @@ import (
 )
 
 func main() {
-	lox := Lox{}
+	lox := Lox{false, false, interpreter{}}
 	cmdArgs := os.Args[1:]
 
 	if len(cmdArgs) == 0 {
-		test()
+		//test()
 		lox.RunPrompt()
 	} else if len(cmdArgs) == 1 {
 		lox.RunFile(cmdArgs[0])

@@ -1,15 +1,19 @@
 package main
 
+import "fmt"
+
 type Parser struct {
 	tokens  []Token
 	current int
 	lox     *Lox
 }
 
-type ParseError struct{}
+type ParseError struct {
+	err error
+}
 
 func (e ParseError) Error() string {
-	return "Hit ParseError"
+	return fmt.Sprintf("ParseError: %v", e.err)
 }
 
 func NewParser(tokens []Token, l *Lox) *Parser {
@@ -190,7 +194,7 @@ func (p *Parser) previous() Token {
 	return p.tokens[p.current-1]
 }
 
-func (p *Parser) error(token Token, message string, l *Lox) ParseError {
+func (p *Parser) error(token Token, message string, l *Lox) error {
 	l.tokenError(token, message)
 	return ParseError{}
 }

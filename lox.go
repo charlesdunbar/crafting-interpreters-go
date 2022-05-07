@@ -7,7 +7,9 @@ import (
 )
 
 type Lox struct {
-	hadError bool
+	hadError        bool
+	hadRuntimeError bool
+	interpreter		interpreter
 }
 
 func (l *Lox) RunFile(source string) {
@@ -19,6 +21,9 @@ func (l *Lox) RunFile(source string) {
 	if l.hadError {
 		os.Exit(65)
 	}
+	if l.hadRuntimeError {
+		os.Exit(70)
+	}
 }
 
 func (l *Lox) RunPrompt() {
@@ -26,7 +31,7 @@ func (l *Lox) RunPrompt() {
 	// Handles Ctrl-D for us
 	s := bufio.NewScanner(os.Stdin)
 	for s.Scan() {
-		fmt.Println(s.Text())
+		//fmt.Println(s.Text())
 		l.run(s.Text())
 		l.hadError = false
 		fmt.Print("> ")
@@ -44,7 +49,8 @@ func (l *Lox) run(source string) {
 	if l.hadError {
 		return
 	}
-	fmt.Println(ast_print(expression))
+	//fmt.Println(expression)
+	l.interpreter.interpret(expression, l)
 }
 
 func (l Lox) error(line int, message string) {
@@ -56,11 +62,16 @@ func (l *Lox) report(line int, where string, message string) {
 	//return fmt.Errorf("[line %d] Error%s: %s", line, where, message)
 	fmt.Printf("[line %d] Error%s: %s\n", line, where, message)
 }
- 
+
 func (l Lox) tokenError(token Token, message string) {
 	if token.l_type == EOF {
 		l.report(token.line, " at end", message)
 	} else {
-		l.report(token.line, " at '" + token.lexeme + "'", message)
+		l.report(token.line, " at '"+token.lexeme+"'", message)
 	}
+}
+
+func (l *Lox) runtimeError(e error) {
+	fmt.Println(e)
+	l.hadRuntimeError = true
 }
