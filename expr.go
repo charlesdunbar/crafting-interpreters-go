@@ -1,7 +1,7 @@
 package main
 
 type Expr interface {
-	String() string
+	Expression() Expr
 }
 
 type Binary struct {
@@ -22,4 +22,12 @@ type Unary struct {
 	operator Token
 	right Expr
 }
+
+func (e *Binary) Expression() Expr { return e }
+
+func (e *Grouping) Expression() Expr { return e }
+
+func (e *Literal) Expression() Expr { return e }
+
+func (e *Unary) Expression() Expr { return e }
 

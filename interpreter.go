@@ -8,19 +8,35 @@ import (
 
 type interpreter struct{}
 
-func (i *interpreter) interpret(expression Expr, l *Lox) {
-	value, err := i.evaluate(expression)
-	if err != nil {
-		l.runtimeError(err)
+// func (i *interpreter) interpret(expression Expr, l *Lox) {
+// 	value, err := i.evaluate(expression)
+// 	if err != nil {
+// 		l.runtimeError(err)
+// 	}
+// 	fmt.Println(i.stringify(value))
+// }
+
+func (i *interpreter) interpret(statements []Stmt) error{
+	for _, s := range statements {
+		i.execute(s)
 	}
-	fmt.Println(i.stringify(value))
+	return nil
+}
+
+func (i *interpreter) execute(stmt Stmt) {
+	switch t := stmt.(type) {
+	case *Expression:
+		i.evaluate(t.expression)
+	case *Print:
+		i.stmtPrint(t)
+	}
 }
 
 func (i *interpreter) evaluate(expr Expr) (interface{}, error) {
 	switch e := expr.(type) {
-	case Literal:
+	case *Literal:
 		return e.value, nil
-	case Unary:
+	case *Unary:
 		right, err := i.evaluate(e.right)
 		if err != nil {
 			return nil, ParseError{err}
@@ -38,7 +54,7 @@ func (i *interpreter) evaluate(expr Expr) (interface{}, error) {
 		}
 		// Unreachable
 		return nil, ParseError{err}
-	case Binary:
+	case *Binary:
 		left, err := i.evaluate(e.left)
 		if err != nil {
 			return nil, ParseError{err}
@@ -98,6 +114,11 @@ func (i *interpreter) evaluate(expr Expr) (interface{}, error) {
 		return nil, ParseError{err}
 	}
 	return nil, ParseError{errors.New("unreachable code error")}
+}
+
+func (i *interpreter) stmtPrint(stmt *Print) {
+	value, _ := i.evaluate(stmt.expression)
+	fmt.Printf("%v\n", i.stringify(value))
 }
 
 func (i *interpreter) isTruthy(obj interface{}) bool {

@@ -3,7 +3,7 @@ package main
 import "fmt"
 
 func ast_print(expr Expr) string {
-	return expr.String()
+	return ""
 }
 
 func (b Binary) String() string {
@@ -40,19 +40,19 @@ func parenthesize(name string, exprs ...Expr) string {
 func test() {
 	u := Unary{}
 	u.operator = Token{MINUS, "-", nil, 1}
-	u.right = Literal{value: 123}
+	u.right = &Literal{value: 123}
 
 	// x := Unary{
 	// 	operator: Token{MINUS, "-", nil, 1},
 	// 	right:    Literal{value: 123},
 	// }
 	expression := Binary{
-		Unary{
+		&Unary{
 			Token{MINUS, "-", nil, 1},
-			Literal{123},
+			&Literal{123},
 		},
 		Token{STAR, "*", nil, 1},
-		Grouping{expression: Literal{45.67}},
+		&Grouping{expression: &Literal{45.67}},
 	}
 	fmt.Println(expression)
 }

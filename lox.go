@@ -42,7 +42,8 @@ func (l *Lox) run(source string) {
 	scanner := NewScanner(source)
 	tokens := scanner.ScanTokens(l)
 	parser := NewParser(tokens, l)
-	expression := parser.parse()
+	//expression := parser.parse()
+	statements := parser.parse()
 	// for _, t := range tokens {
 	// 	fmt.Println(t)
 	// }
@@ -50,7 +51,7 @@ func (l *Lox) run(source string) {
 		return
 	}
 	//fmt.Println(expression)
-	l.interpreter.interpret(expression, l)
+	l.interpreter.interpret(statements)
 }
 
 func (l Lox) error(line int, message string) {

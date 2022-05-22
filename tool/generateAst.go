@@ -22,6 +22,11 @@ func main() {
 		"Literal   : value interface{}",
 		"Unary     : operator Token, right Expr",
 	})
+
+	defineAst(outputDir, "Stmt", []string{
+		"Expression : expression Expr",
+		"Print      : expression Expr",
+	})
 }
 
 func defineAst(outputDir string, baseName string, types []string) {
@@ -34,12 +39,23 @@ func defineAst(outputDir string, baseName string, types []string) {
 	defer f.Close()
 
 	f.WriteString("package main\n\n")
-	f.WriteString("type " + baseName + " interface {\n\tString() string\n}\n\n")
+	var fun string
+	if baseName == "Expr" {
+		fun = "Expression()"
+	} else if baseName == "Stmt" {
+		fun = "Statement()"
+	}
+	f.WriteString("type " + baseName + " interface {\n\t" + fun + " " + baseName + "\n}\n\n")
 	f.WriteString("")
 	for _, t := range types {
 		className := strings.TrimSpace(strings.Split(t, ":")[0])
 		fields := strings.TrimSpace(strings.Split(t, ":")[1])
 		defineType(f, baseName, className, fields)
+	}
+
+	for _, t := range types {
+		className := strings.TrimSpace(strings.Split(t, ":")[0])
+		returnSelf(f, baseName, className, fun)
 	}
 }
 
@@ -53,4 +69,8 @@ func defineType(writer *os.File, baseName, className, fieldList string) {
 		writer.WriteString("\t" + name + " " + l_type + "\n")
 	}
 	writer.WriteString("}\n\n")
+}
+
+func returnSelf(writer *os.File, baseName, className, fun string) {
+	writer.WriteString("func (e *" + className + ") " + fun + " " + baseName + " { return e }\n\n")
 }

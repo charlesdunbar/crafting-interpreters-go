@@ -24,16 +24,44 @@ func NewParser(tokens []Token, l *Lox) *Parser {
 	}
 }
 
-func (p *Parser) parse() Expr {
-	e, err := p.expression()
-	if err != nil {
-		return nil
+// func (p *Parser) parse() Expr {
+// 	e, err := p.expression()
+// 	if err != nil {
+// 		return nil
+// 	}
+// 	return e
+// }
+
+func (p *Parser) parse() []Stmt {
+	var statements []Stmt
+	for !p.isAtEnd() {
+		statements = append(statements, p.statement())
 	}
-	return e
+	return statements
 }
 
 func (p *Parser) expression() (Expr, error) {
 	return p.equality()
+}
+
+func (p *Parser) statement() Stmt{
+	if p.match(PRINT) {
+		return p.printStatement()
+	}
+	return p.expressionStatement()
+
+}
+
+func (p *Parser) printStatement() Stmt {
+	value, _ := p.expression()
+	p.consume(SEMICOLON, "Expect ';' after value.")
+	return &Print{value}
+}
+
+func (p *Parser) expressionStatement() Stmt {
+	expr, _ := p.expression()
+	p.consume(SEMICOLON, "Expect ';' after expression.")
+	return &Expression{expr}
 }
 
 func (p *Parser) equality() (Expr, error) {
@@ -49,7 +77,7 @@ func (p *Parser) equality() (Expr, error) {
 		if err != nil {
 			return nil, err
 		}
-		expr = Binary{expr, operator, right}
+		expr = &Binary{expr, operator, right}
 	}
 	return expr, nil
 }
@@ -67,7 +95,7 @@ func (p *Parser) comparison() (Expr, error) {
 		if err != nil {
 			return nil, err
 		}
-		expr = Binary{expr, operator, right}
+		expr = &Binary{expr, operator, right}
 	}
 	return expr, nil
 }
@@ -85,7 +113,7 @@ func (p *Parser) term() (Expr, error) {
 		if err != nil {
 			return nil, err
 		}
-		expr = Binary{expr, operator, right}
+		expr = &Binary{expr, operator, right}
 	}
 	return expr, nil
 }
@@ -103,7 +131,7 @@ func (p *Parser) factor() (Expr, error) {
 		if err != nil {
 			return nil, err
 		}
-		expr = Binary{expr, operator, right}
+		expr = &Binary{expr, operator, right}
 	}
 	return expr, nil
 }
@@ -115,7 +143,7 @@ func (p *Parser) unary() (Expr, error) {
 		if err != nil {
 			return nil, err
 		}
-		return Unary{operator, right}, nil
+		return &Unary{operator, right}, nil
 	}
 	x, err := p.primary()
 	if err != nil {
@@ -126,17 +154,17 @@ func (p *Parser) unary() (Expr, error) {
 
 func (p *Parser) primary() (Expr, error) {
 	if p.match(FALSE) {
-		return Literal{false}, nil
+		return &Literal{false}, nil
 	}
 	if p.match(TRUE) {
-		return Literal{true}, nil
+		return &Literal{true}, nil
 	}
 	if p.match(NIL) {
-		return Literal{nil}, nil
+		return &Literal{nil}, nil
 	}
 
 	if p.match(NUMBER, STRING) {
-		return Literal{p.previous().literal}, nil
+		return &Literal{p.previous().literal}, nil
 	}
 
 	if p.match(LEFT_PAREN) {
@@ -145,7 +173,7 @@ func (p *Parser) primary() (Expr, error) {
 			return nil, err
 		}
 		p.consume(RIGHT_PAREN, "Expect ')' after expression.")
-		return Grouping{expr}, nil
+		return &Grouping{expr}, nil
 	}
 
 	return nil, p.error(p.peek(), "Expect expression.", p.lox)
