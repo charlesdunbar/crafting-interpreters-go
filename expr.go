@@ -5,9 +5,9 @@ type Expr interface {
 }
 
 type Binary struct {
-	left Expr
+	left     Expr
 	operator Token
-	right Expr
+	right    Expr
 }
 
 type Grouping struct {
@@ -24,7 +24,7 @@ type Variable struct {
 
 type Unary struct {
 	operator Token
-	right Expr
+	right    Expr
 }
 
 func (e *Binary) Expression() Expr { return e }
@@ -36,4 +36,3 @@ func (e *Literal) Expression() Expr { return e }
 func (e *Variable) Expression() Expr { return e }
 
 func (e *Unary) Expression() Expr { return e }
-

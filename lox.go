@@ -9,7 +9,7 @@ import (
 type Lox struct {
 	hadError        bool
 	hadRuntimeError bool
-	interpreter		interpreter
+	interpreter     interpreter
 }
 
 func (l *Lox) RunFile(source string) {

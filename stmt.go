@@ -9,7 +9,7 @@ type Expression struct {
 }
 
 type Var struct {
-	name Token
+	name        Token
 	initializer Expr
 }
 
@@ -22,4 +22,3 @@ func (e *Expression) Statement() Stmt { return e }
 func (e *Var) Statement() Stmt { return e }
 
 func (e *Print) Statement() Stmt { return e }
-
