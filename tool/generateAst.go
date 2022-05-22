@@ -20,11 +20,13 @@ func main() {
 		"Binary    : left Expr, operator Token, right Expr",
 		"Grouping  : expression Expr",
 		"Literal   : value interface{}",
+		"Variable  : name Token",
 		"Unary     : operator Token, right Expr",
 	})
 
 	defineAst(outputDir, "Stmt", []string{
 		"Expression : expression Expr",
+		"Var        : name Token, initializer Expr",
 		"Print      : expression Expr",
 	})
 }

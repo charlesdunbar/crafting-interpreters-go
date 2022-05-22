@@ -1,6 +1,8 @@
 package main
 
-import "fmt"
+import (
+	"fmt"
+)
 
 type Parser struct {
 	tokens  []Token
@@ -35,16 +37,33 @@ func NewParser(tokens []Token, l *Lox) *Parser {
 func (p *Parser) parse() []Stmt {
 	var statements []Stmt
 	for !p.isAtEnd() {
-		statements = append(statements, p.statement())
+		dec, err := p.declaration()
+
+		if err != nil {
+			break
+		}
+
+		statements = append(statements, dec)
 	}
 	return statements
 }
 
-func (p *Parser) expression() (Expr, error) {
-	return p.equality()
+// Need try/catch
+func (p *Parser) declaration() (Stmt, error) {
+	if p.match(VAR) {
+		return p.varDeclaration()
+	}
+
+	state, err := p.statement()
+
+	if err != nil {
+		p.synchronize()
+		return nil, err
+	}
+	return state, nil
 }
 
-func (p *Parser) statement() Stmt{
+func (p *Parser) statement() (Stmt, error) {
 	if p.match(PRINT) {
 		return p.printStatement()
 	}
@@ -52,16 +71,56 @@ func (p *Parser) statement() Stmt{
 
 }
 
-func (p *Parser) printStatement() Stmt {
+func (p *Parser) printStatement() (Stmt, error) {
 	value, _ := p.expression()
-	p.consume(SEMICOLON, "Expect ';' after value.")
-	return &Print{value}
+	_, err := p.consume(SEMICOLON, "Expect ';' after value.")
+
+	if err != nil {
+		return nil, err
+	}
+
+	return &Print{value}, nil
 }
 
-func (p *Parser) expressionStatement() Stmt {
+func (p *Parser) varDeclaration() (Stmt, error) {
+	var initial Expr
+	name, err := p.consume(IDENTIFIER, "Expect variable name.")
+
+	if err != nil {
+		return nil, err
+	}
+
+	if p.match(EQUAL) {
+		initial, err = p.expression()
+
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	_, err = p.consume(SEMICOLON, "Expect ';' after variable declaration")
+
+	if err != nil {
+		return nil, err
+	}
+
+	return &Var{name, initial}, nil
+
+}
+
+func (p *Parser) expressionStatement() (Stmt, error) {
 	expr, _ := p.expression()
-	p.consume(SEMICOLON, "Expect ';' after expression.")
-	return &Expression{expr}
+	_, err := p.consume(SEMICOLON, "Expect ';' after expression.")
+
+	if err != nil {
+		return nil, err
+	}
+
+	return &Expression{expr}, nil
+}
+
+func (p *Parser) expression() (Expr, error) {
+	return p.equality()
 }
 
 func (p *Parser) equality() (Expr, error) {
@@ -165,6 +224,10 @@ func (p *Parser) primary() (Expr, error) {
 
 	if p.match(NUMBER, STRING) {
 		return &Literal{p.previous().literal}, nil
+	}
+
+	if p.match(IDENTIFIER) {
+		return &Variable{p.previous()}, nil
 	}
 
 	if p.match(LEFT_PAREN) {

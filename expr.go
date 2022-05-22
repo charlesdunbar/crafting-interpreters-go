@@ -18,6 +18,10 @@ type Literal struct {
 	value interface{}
 }
 
+type Variable struct {
+	name Token
+}
+
 type Unary struct {
 	operator Token
 	right Expr
@@ -28,6 +32,8 @@ func (e *Binary) Expression() Expr { return e }
 func (e *Grouping) Expression() Expr { return e }
 
 func (e *Literal) Expression() Expr { return e }
+
+func (e *Variable) Expression() Expr { return e }
 
 func (e *Unary) Expression() Expr { return e }
 

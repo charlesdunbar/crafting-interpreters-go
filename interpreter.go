@@ -16,7 +16,7 @@ type interpreter struct{}
 // 	fmt.Println(i.stringify(value))
 // }
 
-func (i *interpreter) interpret(statements []Stmt) error{
+func (i *interpreter) interpret(statements []Stmt) error {
 	for _, s := range statements {
 		i.execute(s)
 	}
@@ -28,7 +28,8 @@ func (i *interpreter) execute(stmt Stmt) {
 	case *Expression:
 		i.evaluate(t.expression)
 	case *Print:
-		i.stmtPrint(t)
+		value, _ := i.evaluate(t.expression)
+		fmt.Printf("%v\n", i.stringify(value))
 	}
 }
 
@@ -114,11 +115,6 @@ func (i *interpreter) evaluate(expr Expr) (interface{}, error) {
 		return nil, ParseError{err}
 	}
 	return nil, ParseError{errors.New("unreachable code error")}
-}
-
-func (i *interpreter) stmtPrint(stmt *Print) {
-	value, _ := i.evaluate(stmt.expression)
-	fmt.Printf("%v\n", i.stringify(value))
 }
 
 func (i *interpreter) isTruthy(obj interface{}) bool {
