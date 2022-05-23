@@ -6,7 +6,9 @@ import (
 	"reflect"
 )
 
-type interpreter struct{}
+type interpreter struct {
+	environment Environment
+}
 
 // func (i *interpreter) interpret(expression Expr, l *Lox) {
 // 	value, err := i.evaluate(expression)
@@ -30,7 +32,16 @@ func (i *interpreter) execute(stmt Stmt) {
 	case *Print:
 		value, _ := i.evaluate(t.expression)
 		fmt.Printf("%v\n", i.stringify(value))
+	case *Var:
+		var value interface{}
+		if t.initializer != nil {
+			value, _ = i.evaluate(t.initializer)
+		} else {
+			value = nil
+		}
+		i.environment.define(t.name.lexeme, value)
 	}
+
 }
 
 func (i *interpreter) evaluate(expr Expr) (interface{}, error) {
@@ -113,6 +124,8 @@ func (i *interpreter) evaluate(expr Expr) (interface{}, error) {
 		}
 		// Unreachable
 		return nil, ParseError{err}
+	case *Variable:
+		return i.environment.get(e.name)
 	}
 	return nil, ParseError{errors.New("unreachable code error")}
 }

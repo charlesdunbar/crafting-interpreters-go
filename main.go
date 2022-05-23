@@ -6,7 +6,10 @@ import (
 )
 
 func main() {
-	lox := Lox{false, false, interpreter{}}
+	lox := Lox{false, false, interpreter{
+		environment: Environment{
+			values: make(map[string]interface{}),
+		}}}
 	cmdArgs := os.Args[1:]
 
 	if len(cmdArgs) == 0 {
