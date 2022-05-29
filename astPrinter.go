@@ -2,10 +2,6 @@ package main
 
 import "fmt"
 
-func ast_print(expr Expr) string {
-	return ""
-}
-
 func (b Binary) String() string {
 	return parenthesize(b.operator.lexeme, b.left, b.right)
 }

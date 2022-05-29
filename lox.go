@@ -31,7 +31,6 @@ func (l *Lox) RunPrompt() {
 	// Handles Ctrl-D for us
 	s := bufio.NewScanner(os.Stdin)
 	for s.Scan() {
-		//fmt.Println(s.Text())
 		l.run(s.Text())
 		l.hadError = false
 		fmt.Print("> ")
@@ -42,16 +41,14 @@ func (l *Lox) run(source string) {
 	scanner := NewScanner(source)
 	tokens := scanner.ScanTokens(l)
 	parser := NewParser(tokens, l)
-	//expression := parser.parse()
 	statements := parser.parse()
-	// for _, t := range tokens {
-	// 	fmt.Println(t)
-	// }
 	if l.hadError {
 		return
 	}
-	//fmt.Println(expression)
-	l.interpreter.interpret(statements)
+	err := l.interpreter.interpret(statements)
+	if err != nil {
+		l.runtimeError(err)
+	}
 }
 
 func (l Lox) error(line int, message string) {

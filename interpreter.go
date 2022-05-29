@@ -10,38 +10,43 @@ type interpreter struct {
 	environment Environment
 }
 
-// func (i *interpreter) interpret(expression Expr, l *Lox) {
-// 	value, err := i.evaluate(expression)
-// 	if err != nil {
-// 		l.runtimeError(err)
-// 	}
-// 	fmt.Println(i.stringify(value))
-// }
-
 func (i *interpreter) interpret(statements []Stmt) error {
 	for _, s := range statements {
-		i.execute(s)
+		err := i.execute(s)
+		if err != nil {
+			return err
+		}
 	}
 	return nil
 }
 
-func (i *interpreter) execute(stmt Stmt) {
+func (i *interpreter) execute(stmt Stmt) error {
 	switch t := stmt.(type) {
 	case *Expression:
-		i.evaluate(t.expression)
+		_, err := i.evaluate(t.expression)
+		if err != nil {
+			return err
+		}
 	case *Print:
-		value, _ := i.evaluate(t.expression)
+		value, err := i.evaluate(t.expression)
+		if err != nil {
+			return err
+		}
 		fmt.Printf("%v\n", i.stringify(value))
 	case *Var:
 		var value interface{}
+		var err error
 		if t.initializer != nil {
-			value, _ = i.evaluate(t.initializer)
+			value, err = i.evaluate(t.initializer)
+			if err != nil {
+				return err
+			}
 		} else {
 			value = nil
 		}
 		i.environment.define(t.name.lexeme, value)
 	}
-
+	return nil
 }
 
 // Visit Expression replacement
@@ -52,7 +57,10 @@ func (i *interpreter) evaluate(expr Expr) (interface{}, error) {
 		if err != nil {
 			return nil, err
 		}
-		i.environment.assign(e.name, value)
+		err = i.environment.assign(e.name, value)
+		if err != nil {
+			return nil, err
+		}
 		return value, nil
 	case *Literal:
 		return e.value, nil
