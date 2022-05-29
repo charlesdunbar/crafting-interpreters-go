@@ -119,8 +119,29 @@ func (p *Parser) expressionStatement() (Stmt, error) {
 	return &Expression{expr}, nil
 }
 
+func (p *Parser) assignment() (Expr, error) {
+	expr, err := p.equality()
+	if err != nil {
+		return nil, err
+	}
+	if p.match(EQUAL) {
+		equals := p.previous()
+		value, err := p.assignment()
+		if err != nil {
+			return nil, err
+		}
+		switch e := expr.(type) {
+		case *Variable:
+			name := e.name
+			return &Assign{name, value}, nil
+		}
+		return nil, p.error(equals, "Invalid assignment target.", p.lox)
+	}
+	return expr, nil
+}
+
 func (p *Parser) expression() (Expr, error) {
-	return p.equality()
+	return p.assignment()
 }
 
 func (p *Parser) equality() (Expr, error) {
