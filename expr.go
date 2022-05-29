@@ -4,6 +4,11 @@ type Expr interface {
 	Expression() Expr
 }
 
+type Assign struct {
+	name  Token
+	value Expr
+}
+
 type Binary struct {
 	left     Expr
 	operator Token
@@ -26,6 +31,8 @@ type Unary struct {
 	operator Token
 	right    Expr
 }
+
+func (e *Assign) Expression() Expr { return e }
 
 func (e *Binary) Expression() Expr { return e }
 
