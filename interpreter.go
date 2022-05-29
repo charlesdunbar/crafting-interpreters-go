@@ -44,8 +44,16 @@ func (i *interpreter) execute(stmt Stmt) {
 
 }
 
+// Visit Expression replacement
 func (i *interpreter) evaluate(expr Expr) (interface{}, error) {
 	switch e := expr.(type) {
+	case *Assign:
+		value, err := i.evaluate(e.value)
+		if err != nil {
+			return nil, err
+		}
+		i.environment.assign(e.name, value)
+		return value, nil
 	case *Literal:
 		return e.value, nil
 	case *Unary:

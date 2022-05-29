@@ -15,3 +15,11 @@ func (e *Environment) get(name Token) (interface{}, error) {
 	return nil, RuntimeError{name, "Undefined variable '" + name.lexeme + "'."}
 }
 
+func (e *Environment) assign(name Token, value interface{}) error {
+	if _, ok := e.values[name.lexeme]; ok {
+		e.values[name.lexeme] = value
+		return nil
+	} else {
+		return RuntimeError{name, "Undefined variable '" + name.lexeme + "'."}
+	}
+}
