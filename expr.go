@@ -20,7 +20,7 @@ type Grouping struct {
 }
 
 type Literal struct {
-	value interface{}
+	value any
 }
 
 type Variable struct {

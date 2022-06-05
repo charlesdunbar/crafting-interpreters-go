@@ -1,21 +1,21 @@
 package main
 
 type Environment struct {
-	values    map[string]interface{}
+	values    map[string]any
 	enclosing *Environment
 }
 
 /*
 	Define a variable in an environment, used with assigning later on
 */
-func (e *Environment) define(name string, value interface{}) {
+func (e *Environment) define(name string, value any) {
 	e.values[name] = value
 }
 
 /*
 	Get a variable from an environment
 */
-func (e *Environment) get(name Token) (interface{}, error) {
+func (e *Environment) get(name Token) (any, error) {
 	if val, ok := e.values[name.lexeme]; ok {
 		return val, nil
 	}
@@ -33,7 +33,7 @@ func (e *Environment) get(name Token) (interface{}, error) {
 /*
 	Assign a variable to an environment, erroring if it's undefined.
 */
-func (e *Environment) assign(name Token, value interface{}) error {
+func (e *Environment) assign(name Token, value any) error {
 	if _, ok := e.values[name.lexeme]; ok {
 		e.values[name.lexeme] = value
 		return nil

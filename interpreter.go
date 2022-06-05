@@ -23,7 +23,7 @@ func (i *interpreter) interpret(statements []Stmt) error {
 func (i *interpreter) execute(stmt Stmt) error {
 	switch t := stmt.(type) {
 	case *Block:
-		err := i.executeBlock(t.statements, &Environment{values: make(map[string]interface{}), enclosing: i.environment})
+		err := i.executeBlock(t.statements, &Environment{values: make(map[string]any), enclosing: i.environment})
 		if err != nil {
 			return err
 		}
@@ -39,7 +39,7 @@ func (i *interpreter) execute(stmt Stmt) error {
 		}
 		fmt.Printf("%v\n", i.stringify(value))
 	case *Var:
-		var value interface{}
+		var value any
 		var err error
 		if t.initializer != nil {
 			value, err = i.evaluate(t.initializer)
@@ -70,7 +70,7 @@ func (i *interpreter) executeBlock(statements []Stmt, env *Environment) error {
 }
 
 // Visit Expression replacement
-func (i *interpreter) evaluate(expr Expr) (interface{}, error) {
+func (i *interpreter) evaluate(expr Expr) (any, error) {
 	switch e := expr.(type) {
 	case *Assign:
 		value, err := i.evaluate(e.value)
@@ -166,7 +166,7 @@ func (i *interpreter) evaluate(expr Expr) (interface{}, error) {
 	return nil, ParseError{errors.New("unreachable code error")}
 }
 
-func (i *interpreter) isTruthy(obj interface{}) bool {
+func (i *interpreter) isTruthy(obj any) bool {
 	if obj == nil {
 		return false
 	}
@@ -176,7 +176,7 @@ func (i *interpreter) isTruthy(obj interface{}) bool {
 	return true
 }
 
-func (i *interpreter) isEqual(a, b interface{}) bool {
+func (i *interpreter) isEqual(a, b any) bool {
 	if a == nil && b == nil {
 		return true
 	}
@@ -186,7 +186,7 @@ func (i *interpreter) isEqual(a, b interface{}) bool {
 	return a == b
 }
 
-func (i *interpreter) checkNumberOperand(operator Token, operand interface{}) (float64, error) {
+func (i *interpreter) checkNumberOperand(operator Token, operand any) (float64, error) {
 	o, ok := operand.(float64)
 	if !ok {
 		return 0, &RuntimeError{operator, "operand must be a number."}
@@ -194,7 +194,7 @@ func (i *interpreter) checkNumberOperand(operator Token, operand interface{}) (f
 	return o, nil
 }
 
-func (i *interpreter) checkNumberOperands(operator Token, left, right interface{}) (float64, float64, error) {
+func (i *interpreter) checkNumberOperands(operator Token, left, right any) (float64, float64, error) {
 	l, ok := left.(float64)
 	r, ok2 := right.(float64)
 	if !ok || !ok2 {
@@ -203,7 +203,7 @@ func (i *interpreter) checkNumberOperands(operator Token, left, right interface{
 	return l, r, nil
 }
 
-func (i *interpreter) stringify(object interface{}) string {
+func (i *interpreter) stringify(object any) string {
 	if object == nil {
 		return "nil"
 	}

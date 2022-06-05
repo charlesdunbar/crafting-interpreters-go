@@ -22,7 +22,7 @@ func main() {
 		"Assign    : name Token, value Expr",
 		"Binary    : left Expr, operator Token, right Expr",
 		"Grouping  : expression Expr",
-		"Literal   : value interface{}",
+		"Literal   : value any",
 		"Variable  : name Token",
 		"Unary     : operator Token, right Expr",
 	})
@@ -60,7 +60,7 @@ func defineAst(outputDir string, baseName string, types []string) {
 		defineType(buf, baseName, className, fields)
 	}
 
-	// Fake method to make the types not be interface{}
+	// Fake method to make the types not be any
 	for _, t := range types {
 		className := strings.TrimSpace(strings.Split(t, ":")[0])
 		returnSelf(buf, baseName, className, fun)

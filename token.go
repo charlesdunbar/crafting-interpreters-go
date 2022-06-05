@@ -5,7 +5,7 @@ import "fmt"
 type Token struct {
 	l_type  TokenType
 	lexeme  string
-	literal interface{}
+	literal any
 	line    int
 }
 

@@ -271,7 +271,7 @@ func (s *Scanner) advance() byte {
 	return c
 }
 
-func (s *Scanner) addToken(l_type TokenType, literal ...interface{}) {
+func (s *Scanner) addToken(l_type TokenType, literal ...any) {
 	if len(literal) == 0 {
 		s.addTokenTypeObject(l_type, nil)
 	} else {
@@ -279,7 +279,7 @@ func (s *Scanner) addToken(l_type TokenType, literal ...interface{}) {
 	}
 }
 
-func (s *Scanner) addTokenTypeObject(l_type TokenType, literal interface{}) {
+func (s *Scanner) addTokenTypeObject(l_type TokenType, literal any) {
 	text := s.source[s.start:s.current]
 	s.tokens = append(s.tokens, Token{l_type, text, literal, s.line})
 }
