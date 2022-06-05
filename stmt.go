@@ -4,6 +4,10 @@ type Stmt interface {
 	Statement() Stmt
 }
 
+type Block struct {
+	statements []Stmt
+}
+
 type Expression struct {
 	expression Expr
 }
@@ -16,6 +20,8 @@ type Var struct {
 type Print struct {
 	expression Expr
 }
+
+func (e *Block) Statement() Stmt { return e }
 
 func (e *Expression) Statement() Stmt { return e }
 

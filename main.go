@@ -7,8 +7,9 @@ import (
 
 func main() {
 	lox := Lox{false, false, interpreter{
-		environment: Environment{
-			values: make(map[string]interface{}),
+		environment: &Environment{
+			values:    make(map[string]interface{}),
+			enclosing: nil,
 		}}}
 	cmdArgs := os.Args[1:]
 

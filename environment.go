@@ -1,9 +1,7 @@
 package main
 
-import "golang.org/x/tools/go/analysis/passes/nilfunc"
-
 type Environment struct {
-	values map[string]interface{}
+	values    map[string]interface{}
 	enclosing *Environment
 }
 

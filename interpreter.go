@@ -7,7 +7,7 @@ import (
 )
 
 type interpreter struct {
-	environment Environment
+	environment *Environment
 }
 
 func (i *interpreter) interpret(statements []Stmt) error {
@@ -22,6 +22,11 @@ func (i *interpreter) interpret(statements []Stmt) error {
 
 func (i *interpreter) execute(stmt Stmt) error {
 	switch t := stmt.(type) {
+	case *Block:
+		err := i.executeBlock(t.statements, &Environment{enclosing: i.environment})
+		if err != nil {
+			return err
+		}
 	case *Expression:
 		_, err := i.evaluate(t.expression)
 		if err != nil {
@@ -45,6 +50,21 @@ func (i *interpreter) execute(stmt Stmt) error {
 			value = nil
 		}
 		i.environment.define(t.name.lexeme, value)
+	}
+	return nil
+}
+
+func (i *interpreter) executeBlock(statements []Stmt, env *Environment) error {
+	previous := i.environment
+	// Mimic "finally" block
+	defer func() { i.environment = previous }()
+
+	i.environment = env
+	for _, stmt := range statements {
+		err := i.execute(stmt)
+		if err != nil {
+			return err
+		}
 	}
 	return nil
 }
