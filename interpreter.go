@@ -23,7 +23,7 @@ func (i *interpreter) interpret(statements []Stmt) error {
 func (i *interpreter) execute(stmt Stmt) error {
 	switch t := stmt.(type) {
 	case *Block:
-		err := i.executeBlock(t.statements, &Environment{enclosing: i.environment})
+		err := i.executeBlock(t.statements, &Environment{values: make(map[string]interface{}), enclosing: i.environment})
 		if err != nil {
 			return err
 		}
