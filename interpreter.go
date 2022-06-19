@@ -95,6 +95,22 @@ func (i *interpreter) evaluate(expr Expr) (any, error) {
 		return value, nil
 	case *Literal:
 		return e.value, nil
+	case *Logical:
+		left, err := i.evaluate(e.left)
+		if err != nil {
+			return nil, err
+		}
+
+		if e.operator.l_type == OR {
+			if i.isTruthy(left) {
+				return left, nil
+			} else {
+				if !i.isTruthy(left) {
+					return left, nil
+				}
+			}
+		}
+		return i.evaluate(e.right)
 	case *Unary:
 		right, err := i.evaluate(e.right)
 		if err != nil {

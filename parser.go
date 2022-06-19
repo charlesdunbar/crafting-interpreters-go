@@ -212,7 +212,20 @@ func (p *Parser) or() (Expr, error) {
 }
 
 func (p *Parser) and() (Expr, error) {
-	
+	expr, err := p.equality()
+	if err != nil {
+		return nil, err
+	}
+
+	for p.match(AND) {
+		operator := p.previous()
+		right, err := p.equality()
+		if err != nil {
+			return nil, err
+		}
+		expr = &Logical{expr, operator, right}
+	}
+	return expr, nil
 }
 
 func (p *Parser) expression() (Expr, error) {
