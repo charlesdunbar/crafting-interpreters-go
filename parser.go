@@ -171,7 +171,7 @@ func (p *Parser) block() []Stmt {
 }
 
 func (p *Parser) assignment() (Expr, error) {
-	expr, err := p.equality()
+	expr, err := p.or()
 	if err != nil {
 		return nil, err
 	}
@@ -189,6 +189,30 @@ func (p *Parser) assignment() (Expr, error) {
 		return nil, p.error(equals, "Invalid assignment target.", p.lox)
 	}
 	return expr, nil
+}
+
+func (p *Parser) or() (Expr, error) {
+	expr, err := p.and()
+	if err != nil {
+		return nil, err
+	}
+
+	for p.match(OR) {
+		operator := p.previous()
+		right, err := p.and()
+		if err != nil {
+			return nil, err
+		}
+
+		expr = &Logical{expr, operator, right}
+	}
+
+	return expr, nil
+
+}
+
+func (p *Parser) and() (Expr, error) {
+	
 }
 
 func (p *Parser) expression() (Expr, error) {

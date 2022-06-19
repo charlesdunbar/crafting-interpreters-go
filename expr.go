@@ -23,6 +23,12 @@ type Literal struct {
 	value any
 }
 
+type Logical struct {
+	left     Expr
+	operator Token
+	right    Expr
+}
+
 type Variable struct {
 	name Token
 }
@@ -39,6 +45,8 @@ func (e *Binary) Expression() Expr { return e }
 func (e *Grouping) Expression() Expr { return e }
 
 func (e *Literal) Expression() Expr { return e }
+
+func (e *Logical) Expression() Expr { return e }
 
 func (e *Variable) Expression() Expr { return e }
 

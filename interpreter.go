@@ -20,6 +20,7 @@ func (i *interpreter) interpret(statements []Stmt) error {
 	return nil
 }
 
+// Visit statement replacement
 func (i *interpreter) execute(stmt Stmt) error {
 	switch t := stmt.(type) {
 	case *Block:
@@ -31,6 +32,16 @@ func (i *interpreter) execute(stmt Stmt) error {
 		_, err := i.evaluate(t.expression)
 		if err != nil {
 			return err
+		}
+	case *If:
+		cond, err := i.evaluate(t.condition)
+		if err != nil {
+			return err
+		}
+		if i.isTruthy(cond) {
+			i.execute(t.thenBranch)
+		} else if t.elseBranch != nil {
+			i.execute(t.elseBranch)
 		}
 	case *Print:
 		value, err := i.evaluate(t.expression)
