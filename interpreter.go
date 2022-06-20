@@ -49,6 +49,14 @@ func (i *interpreter) execute(stmt Stmt) error {
 			return err
 		}
 		fmt.Printf("%v\n", i.stringify(value))
+	case *While:
+		val, err := i.evaluate(t.condition)
+		if err != nil {
+			return err
+		}
+		for i.isTruthy(val) {
+			i.execute(t.body)
+		}
 	case *Var:
 		var value any
 		var err error
@@ -102,9 +110,11 @@ func (i *interpreter) evaluate(expr Expr) (any, error) {
 		}
 
 		if e.operator.l_type == OR {
+			// Short circuit true for OR
 			if i.isTruthy(left) {
 				return left, nil
 			} else {
+				// Short circuit false for AND
 				if !i.isTruthy(left) {
 					return left, nil
 				}

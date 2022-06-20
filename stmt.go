@@ -27,6 +27,11 @@ type Print struct {
 	expression Expr
 }
 
+type While struct {
+	condition Expr
+	body      Stmt
+}
+
 func (e *Block) Statement() Stmt { return e }
 
 func (e *Expression) Statement() Stmt { return e }
@@ -36,3 +41,5 @@ func (e *If) Statement() Stmt { return e }
 func (e *Var) Statement() Stmt { return e }
 
 func (e *Print) Statement() Stmt { return e }
+
+func (e *While) Statement() Stmt { return e }
