@@ -140,8 +140,6 @@ func (p *Parser) forStatement() (Stmt, error) {
 		return nil, err
 	}
 
-	fmt.Printf("Initalizer, condition, increment, and body are equal to %+v %+v %+v %+v\n", initializer, condition, increment, body)
-
 	if increment != nil {
 		body = &Block{[]Stmt{body, &Expression{increment}}}
 	}
