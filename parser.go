@@ -70,6 +70,9 @@ func (p *Parser) statement() (Stmt, error) {
 	if p.match(PRINT) {
 		return p.printStatement()
 	}
+	if p.match(FOR) {
+		return p.forStatement()
+	}
 	if p.match(WHILE) {
 		return p.whileStatement()
 	}
@@ -78,6 +81,81 @@ func (p *Parser) statement() (Stmt, error) {
 	}
 	return p.expressionStatement()
 
+}
+
+func (p *Parser) forStatement() (Stmt, error) {
+	// Desugar a for-loop to a while loop
+	_, err := p.consume(LEFT_PAREN, "Expect '(' after 'for'.")
+	if err != nil {
+		return nil, err
+	}
+
+	// Initializer
+	var initializer Stmt = nil
+	if p.match(SEMICOLON) {
+		// Initalizer skipped in for loop
+		initializer = nil
+	} else if p.match(VAR) {
+		// Declare a variable scoped to for loop
+		initializer, err = p.varDeclaration()
+		if err != nil {
+			return nil, err
+		}
+	} else {
+		// Init variable already exists
+		initializer, err = p.expressionStatement()
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	// Condition
+	var condition Expr = nil
+	if !p.check(SEMICOLON) {
+		condition, err = p.expression()
+		if err != nil {
+			return nil, err
+		}
+	}
+	_, err = p.consume(SEMICOLON, "Expect ';' after loop condition.")
+	if err != nil {
+		return nil, err
+	}
+
+	// Increment
+	var increment Expr = nil
+	if !p.check(RIGHT_PAREN) {
+		increment, err = p.expression()
+		if err != nil {
+			return nil, err
+		}
+	}
+	_, err = p.consume(RIGHT_PAREN, "Expect ')' after for clauses.")
+	if err != nil {
+		return nil, err
+	}
+	
+	body, err := p.statement()
+	if err != nil {
+		return nil, err
+	}
+
+	fmt.Printf("Initalizer, condition, increment, and body are equal to %+v %+v %+v %+v\n", initializer, condition, increment, body)
+
+	if increment != nil {
+		body = &Block{[]Stmt{body, &Expression{increment}}}
+	}
+
+	if condition == nil {
+		condition = &Literal{true}
+	}
+	body = &While{condition, body}
+
+	if initializer == nil {
+		body = &Block{[]Stmt{initializer, body}}
+	}
+	
+	return body, nil
 }
 
 func (p *Parser) ifStatement() (Stmt, error) {

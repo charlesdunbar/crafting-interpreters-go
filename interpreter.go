@@ -50,11 +50,11 @@ func (i *interpreter) execute(stmt Stmt) error {
 		}
 		fmt.Printf("%v\n", i.stringify(value))
 	case *While:
-		val, err := i.evaluate(t.condition)
-		if err != nil {
-			return err
-		}
-		for i.isTruthy(val) {
+		// Can't chain i.evalute(t.condition) by itself, so set it as initalizer and incrementer
+		for val, err := i.evaluate(t.condition); i.isTruthy(val); val, err = i.evaluate(t.condition) {
+			if err != nil {
+				return err
+			}
 			i.execute(t.body)
 		}
 	case *Var:
