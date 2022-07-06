@@ -151,7 +151,7 @@ func (p *Parser) forStatement() (Stmt, error) {
 	}
 	body = &While{condition, body}
 
-	if initializer == nil {
+	if initializer != nil {
 		body = &Block{[]Stmt{initializer, body}}
 	}
 	
