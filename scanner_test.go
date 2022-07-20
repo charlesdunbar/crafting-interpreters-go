@@ -64,11 +64,12 @@ func TestAddToken(t *testing.T) {
 	if s.tokens[0] != expected {
 		t.Errorf("AddToken was incorrect, got {%+v}, expected {%+v}", s.tokens[0], expected)
 	}
-	
+
 	s = NewScanner("64")
 	s.current = 2
+	s.line = 5
 	s.addToken(NUMBER, 64.0)
-	expected = Token{NUMBER, "64", 64.0, 1}
+	expected = Token{NUMBER, "64", 64.0, 5}
 	if s.tokens[0] != expected {
 		t.Errorf("AddTokenTypeObject was incorrect, got {%+v}, expected {%+v}", s.tokens[0], expected)
 	}

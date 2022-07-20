@@ -10,7 +10,7 @@ type interpreter struct {
 	environment *Environment
 }
 
-func (i *interpreter) interpret(statements []Stmt) error {
+func (i interpreter) interpret(statements []Stmt) error {
 	for _, s := range statements {
 		err := i.execute(s)
 		if err != nil {

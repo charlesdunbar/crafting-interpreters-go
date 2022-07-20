@@ -26,14 +26,6 @@ func NewParser(tokens []Token, l *Lox) *Parser {
 	}
 }
 
-// func (p *Parser) parse() Expr {
-// 	e, err := p.expression()
-// 	if err != nil {
-// 		return nil
-// 	}
-// 	return e
-// }
-
 func (p *Parser) parse() []Stmt {
 	var statements []Stmt
 	for !p.isAtEnd() {
@@ -48,7 +40,6 @@ func (p *Parser) parse() []Stmt {
 	return statements
 }
 
-// Need try/catch
 func (p *Parser) declaration() (Stmt, error) {
 	if p.match(VAR) {
 		return p.varDeclaration()

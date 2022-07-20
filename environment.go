@@ -5,6 +5,13 @@ type Environment struct {
 	enclosing *Environment
 }
 
+func NewEnvironment() *Environment {
+	return &Environment{
+		values:    make(map[string]any),
+		enclosing: nil,
+	}
+}
+
 /*
 	Define a variable in an environment, used with assigning later on
 */

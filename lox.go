@@ -9,7 +9,6 @@ import (
 type Lox struct {
 	hadError        bool
 	hadRuntimeError bool
-	interpreter     interpreter
 }
 
 func (l *Lox) RunFile(source string) {
@@ -45,7 +44,7 @@ func (l *Lox) run(source string) {
 	if l.hadError {
 		return
 	}
-	err := l.interpreter.interpret(statements)
+	err := interpreter{environment: NewEnvironment()}.interpret(statements)
 	if err != nil {
 		l.runtimeError(err)
 	}
