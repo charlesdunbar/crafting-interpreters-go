@@ -74,3 +74,19 @@ func TestAddToken(t *testing.T) {
 		t.Errorf("AddTokenTypeObject was incorrect, got {%+v}, expected {%+v}", s.tokens[0], expected)
 	}
 }
+
+func TestMatch(t *testing.T) {
+	s := NewScanner("a")
+	got := s.match('a')
+	if !got {
+		t.Errorf("Match was incorrect, got %t, expected %t", got, true)
+	}
+
+	s = NewScanner("test")
+	s.current = 3
+	got = s.match('e')
+	if got {
+		t.Errorf("Match was incorrect, got %t, expected %t", got, false)
+	}
+}
+
