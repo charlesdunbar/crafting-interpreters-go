@@ -22,6 +22,7 @@ func NewScanner(source string) *Scanner {
 		line:    1,
 		keywords: map[string]TokenType{
 			"and":    AND,
+			"break":  BREAK,
 			"class":  CLASS,
 			"else":   ELSE,
 			"false":  FALSE,

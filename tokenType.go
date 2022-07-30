@@ -34,6 +34,7 @@ const (
 
 	//Keywords.
 	AND
+	BREAK
 	CLASS
 	ELSE
 	FALSE

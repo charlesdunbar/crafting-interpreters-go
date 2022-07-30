@@ -30,6 +30,7 @@ func main() {
 
 	defineAst(outputDir, "Stmt", []string{
 		"Block      : statements []Stmt",
+		"Break      : ",
 		"Expression : expression Expr",
 		"If         : condition Expr, thenBranch Stmt, elseBranch Stmt",
 		"Var        : name Token, initializer Expr",
@@ -75,8 +76,10 @@ func defineAst(outputDir string, baseName string, types []string) {
 
 func defineType(writer *bytes.Buffer, baseName, className, fieldList string) {
 	writer.WriteString("type " + className + " struct {\n")
-	//writer.WriteString("	Expr\n")
-	fields := strings.Split(fieldList, ", ")
+	var fields []string
+	if len(fieldList) != 0 {
+		fields = strings.Split(fieldList, ", ")
+	}
 	for _, f := range fields {
 		name := strings.Split(f, " ")[0]
 		l_type := strings.Split(f, " ")[1]

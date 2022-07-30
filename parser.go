@@ -8,6 +8,7 @@ type Parser struct {
 	tokens  []Token
 	current int
 	lox     *Lox
+	loopDepth int
 }
 
 type ParseError struct {
@@ -79,11 +80,27 @@ func (p *Parser) statement() (Stmt, error) {
 	if p.match(LEFT_BRACE) {
 		return &Block{p.block()}, nil
 	}
+	if p.match(BREAK) {
+		return p.breakStatement()
+	}
 	return p.expressionStatement()
 
 }
 
+func (p *Parser) breakStatement() (Stmt, error) {
+	if p.loopDepth == 0 {
+		p.error(p.previous(), "Must be inside a loop to use 'break'.", p.lox)
+	}
+	_, err := p.consume(SEMICOLON, "Expect ';' after 'break'.")
+	if err != nil {
+		return nil, err
+	}
+	return &Break{}, nil
+}
+
 func (p *Parser) forStatement() (Stmt, error) {
+	p.loopDepth += 1
+	defer func() { p.loopDepth -= 1}()
 	// Desugar a for-loop to a while loop
 	_, err := p.consume(LEFT_PAREN, "Expect '(' after 'for'.")
 	if err != nil {
@@ -227,6 +244,8 @@ func (p *Parser) varDeclaration() (Stmt, error) {
 }
 
 func (p *Parser) whileStatement() (Stmt, error) {
+	p.loopDepth += 1
+	defer func() { p.loopDepth -= 1}()
 	_, err := p.consume(LEFT_PAREN, "Expect '(' after 'while'.")
 	if err != nil {
 		return nil, err

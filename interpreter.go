@@ -10,6 +10,14 @@ type interpreter struct {
 	environment *Environment
 }
 
+type BreakError struct {
+	err error
+}
+
+func (b *BreakError) Error() string {
+	return b.err.Error()
+}
+
 func (i *interpreter) interpret(statements []Stmt) error {
 	for _, s := range statements {
 		err := i.execute(s)
@@ -28,6 +36,8 @@ func (i *interpreter) execute(stmt Stmt) error {
 		if err != nil {
 			return err
 		}
+	case *Break:
+		return &BreakError{}
 	case *Expression:
 		_, err := i.evaluate(t.expression)
 		if err != nil {
@@ -52,8 +62,11 @@ func (i *interpreter) execute(stmt Stmt) error {
 	case *While:
 		// Can't chain i.evalute(t.condition) by itself, so set it as initalizer and incrementer
 		for val, err := i.evaluate(t.condition); i.isTruthy(val); val, err = i.evaluate(t.condition) {
-			if err != nil {
+			switch err.(type) {
+			case nil:
 				return err
+			case *BreakError:
+				// Do nothing
 			}
 			i.execute(t.body)
 		}

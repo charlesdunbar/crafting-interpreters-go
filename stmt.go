@@ -8,6 +8,9 @@ type Block struct {
 	statements []Stmt
 }
 
+type Break struct {
+}
+
 type Expression struct {
 	expression Expr
 }
@@ -33,6 +36,8 @@ type While struct {
 }
 
 func (e *Block) Statement() Stmt { return e }
+
+func (e *Break) Statement() Stmt { return e }
 
 func (e *Expression) Statement() Stmt { return e }
 
