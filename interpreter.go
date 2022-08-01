@@ -62,12 +62,15 @@ func (i *interpreter) execute(stmt Stmt) error {
 	case *While:
 		// Can't chain i.evalute(t.condition) by itself, so set it as initalizer and incrementer
 		for val, err := i.evaluate(t.condition); i.isTruthy(val); val, err = i.evaluate(t.condition) {
-			switch err.(type) {
-			case nil:
-				return err
-			case *BreakError:
-				// Do nothing
+			if err != nil {
+				switch err.(type) {
+				case *BreakError:
+					// Do nothing
+				default:
+					return err
+				}
 			}
+
 			i.execute(t.body)
 		}
 	case *Var:
