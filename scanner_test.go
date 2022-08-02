@@ -52,7 +52,7 @@ func TestAddTokenTypeObject(t *testing.T) {
 	s.addTokenTypeObject(NUMBER, 64.0)
 	expected := Token{NUMBER, "64", 64.0, 1}
 	if s.tokens[0] != expected {
-		t.Errorf("AddTokenTypeObject was incorrect, got {%+v}, expected {%+v}", s.tokens[0], expected)
+		t.Errorf("AddTokenTypeObject was incorrect, got %+v, expected {%+v}", s.tokens[0], expected)
 	}
 }
 
@@ -62,7 +62,7 @@ func TestAddToken(t *testing.T) {
 	s.addToken(PLUS)
 	expected := Token{PLUS, "+", nil, 1}
 	if s.tokens[0] != expected {
-		t.Errorf("AddToken was incorrect, got {%+v}, expected {%+v}", s.tokens[0], expected)
+		t.Errorf("AddToken was incorrect, got %+v, expected %+v", s.tokens[0], expected)
 	}
 
 	s = NewScanner("64")
@@ -71,7 +71,7 @@ func TestAddToken(t *testing.T) {
 	s.addToken(NUMBER, 64.0)
 	expected = Token{NUMBER, "64", 64.0, 5}
 	if s.tokens[0] != expected {
-		t.Errorf("AddTokenTypeObject was incorrect, got {%+v}, expected {%+v}", s.tokens[0], expected)
+		t.Errorf("AddTokenTypeObject was incorrect, got %+v, expected %+v", s.tokens[0], expected)
 	}
 }
 

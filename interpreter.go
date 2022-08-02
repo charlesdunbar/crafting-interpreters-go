@@ -101,6 +101,27 @@ func (i *interpreter) evaluate(expr Expr) (any, error) {
 			return nil, err
 		}
 		return value, nil
+	case *Call:
+		callee, err := i.evaluate(e.callee)
+		if err != nil {
+			return nil, err
+		}
+		var arguments []any
+		for _, arg := range e.arguments {
+			arguments = append(arguments, arg)
+		}
+
+		// Don't allow trying to call "foobar"()
+		local_func, ok := callee.(LoxCallable)
+		if !ok {
+			return nil, NewRuntimeError(e.paren, "Can only call functions and classes.")
+		}
+
+		// Check arity of the function
+		if len(arguments) != local_func.arity() {
+			return nil, NewRuntimeError(e.paren, fmt.Sprintf("Expected %d arguments but got %d.\n", local_func.arity(), len(arguments)))
+		}
+		return local_func.call(i, arguments), nil
 	case *Literal:
 		return e.value, nil
 	case *Logical:

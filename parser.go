@@ -407,11 +407,62 @@ func (p *Parser) unary() (Expr, error) {
 		}
 		return &Unary{operator, right}, nil
 	}
-	x, err := p.primary()
+	ret, err := p.call()
 	if err != nil {
 		return nil, err
 	}
-	return x, nil
+	return ret, nil
+}
+
+/*
+	finishCall checks for any arguments passed to a function and calls itself for each argument sent
+	If there are no arguments we don't try to parse
+*/
+func (p *Parser) finishCall(callee Expr) Expr {
+	var arguments []Expr
+	if !p.check(RIGHT_PAREN) {
+		exp, err := p.expression()
+		if err != nil {
+			fmt.Println("Error in finish Call")
+		}
+		// Mimic do-while loop
+		arguments = append(arguments, exp)
+		for p.match(COMMA) {
+			if len(arguments) >= 255 {
+				p.error(p.peek(), "Can't have more than 255 arguments.", p.lox)
+			}
+			exp, err = p.expression()
+			if err != nil {
+				fmt.Println("Error in finish Call")
+			}
+			arguments = append(arguments, exp)
+		}
+	}
+
+	paren, err := p.consume(RIGHT_PAREN, "Expect ')' after arguments.")
+	if err != nil {
+		fmt.Println("Error in finish Call consume")
+	}
+
+	return &Call{callee, paren, arguments}
+
+}
+
+func (p *Parser) call() (Expr, error) {
+	expr, err := p.primary()
+	if err != nil {
+		return nil, err
+	}
+
+	for {
+		if p.match(LEFT_PAREN) {
+			expr = p.finishCall(expr)
+		} else {
+			break
+		}
+	}
+
+	return expr, nil
 }
 
 func (p *Parser) primary() (Expr, error) {

@@ -11,6 +11,11 @@ type Lox struct {
 	hadRuntimeError bool
 }
 
+type LoxCallable interface {
+	call(* interpreter, []any) any
+	arity() int	
+}
+
 func (l *Lox) RunFile(source string) {
 	f, err := os.ReadFile(source)
 	if err != nil {
@@ -60,7 +65,7 @@ func (l *Lox) report(line int, where string, message string) {
 	fmt.Printf("[line %d] Error%s: %s\n", line, where, message)
 }
 
-func (l Lox) tokenError(token Token, message string) {
+func (l *Lox) tokenError(token Token, message string) {
 	if token.l_type == EOF {
 		l.report(token.line, " at end", message)
 	} else {
