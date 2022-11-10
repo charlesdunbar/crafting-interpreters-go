@@ -12,8 +12,8 @@ type Lox struct {
 }
 
 type LoxCallable interface {
-	call(* interpreter, []any) any
-	arity() int	
+	call(*interpreter, []any) any
+	arity() int
 }
 
 func (l *Lox) RunFile(source string) {

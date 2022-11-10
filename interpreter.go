@@ -4,10 +4,33 @@ import (
 	"errors"
 	"fmt"
 	"reflect"
+	"time"
 )
 
 type interpreter struct {
+	globals     *Environment
 	environment *Environment
+}
+
+type clock struct{}
+
+func (c clock) arity() int {
+	return 0
+}
+
+func (c clock) call(int *interpreter, args []any) any {
+	return time.Now().UnixMilli()
+}
+
+func NewInterpreter() *interpreter {
+	global := &Environment{}
+	env := global
+
+	global.define("clock", clock{})
+	return &interpreter{
+		globals:     global,
+		environment: env,
+	}
 }
 
 func (i interpreter) interpret(statements []Stmt) error {

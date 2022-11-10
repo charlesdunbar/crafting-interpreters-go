@@ -41,6 +41,9 @@ func (p *Parser) parse() []Stmt {
 }
 
 func (p *Parser) declaration() (Stmt, error) {
+	if p.match(FUN) {
+		return p.function("function"), nil
+	}
 	if p.match(VAR) {
 		return p.varDeclaration()
 	}
@@ -250,6 +253,17 @@ func (p *Parser) expressionStatement() (Stmt, error) {
 	}
 
 	return &Expression{expr}, nil
+}
+
+/*
+* Need to use *Function to return a nil if error occurs
+*/
+func (p *Parser) function(kind string) (*Function, error) {
+	name, err := p.consume(IDENTIFIER, "Expect " + kind + " name.")
+	if err != nil {
+		return nil, err
+	}
+	
 }
 
 func (p *Parser) block() []Stmt {
