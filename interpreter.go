@@ -12,6 +12,7 @@ type interpreter struct {
 	environment *Environment
 }
 
+// Built-in clock functionality
 type clock struct{}
 
 func (c clock) arity() int {
@@ -19,7 +20,11 @@ func (c clock) arity() int {
 }
 
 func (c clock) call(int *interpreter, args []any) any {
-	return time.Now().UnixMilli()
+	return float64(time.Now().UnixMilli() / 1000)
+}
+
+func (c clock) String() string {
+	return "<native fn>"
 }
 
 func NewInterpreter() *interpreter {
@@ -56,6 +61,9 @@ func (i *interpreter) execute(stmt Stmt) error {
 		if err != nil {
 			return err
 		}
+	case *Function:
+		function := LoxFunction{*t}
+		i.environment.define(t.name.lexeme, function)
 	case *If:
 		cond, err := i.evaluate(t.condition)
 		if err != nil {
@@ -225,14 +233,42 @@ func (i *interpreter) evaluate(expr Expr) (any, error) {
 		case MINUS:
 			return left.(float64) - right.(float64), nil
 		case PLUS:
-			if reflect.TypeOf(left).Kind().String() == "float64" &&
-				reflect.TypeOf(right).Kind().String() == "float64" {
-				return left.(float64) + right.(float64), nil
+			// This is a treat, dealing with both how variables are stored in Literals, or if the value is static
+			l := i.ReadStruct(left)
+			r := i.ReadStruct(right)
+			if l == "float64" && r == "float64" {
+				var real_left float64
+				var real_right float64
+				switch left.(type) {
+				case float64:
+					real_left = left.(float64)
+				case *Literal:
+					real_left = left.(*Literal).value.(float64)
+				}
+				switch right.(type) {
+				case float64:
+					real_right = right.(float64)
+				case *Literal:
+					real_right = right.(*Literal).value.(float64)
+				}
+				return real_left + real_right, nil
 			}
-			if reflect.TypeOf(left).Kind().String() == "string" &&
-				reflect.TypeOf(right).Kind().String() == "string" {
-				return left.(string) + right.(string), nil
+			if l == "string" && r == "string" {
+				return fmt.Sprintf("%v", left) + fmt.Sprintf("%v", right), nil
 			}
+			// if i.ReadStruct(left) == "string" &&
+			// 	i.ReadStruct(right) == "string" {
+			// 	return left.(string) + right.(string), nil
+			// }
+			// if l, ok := left.(float64); ok {
+			// 	if r, ok := right.(float64); ok {
+			// 		return l + r, nil
+			// 	}
+			// } else if l , ok := left.(string); ok {
+			// 	if r, ok := right.(string); ok {
+			// 		return l + r, nil
+			// 	}
+			// }
 			return nil, &RuntimeError{e.operator, "operands must be two numbers or two strings."}
 		case SLASH:
 			return left.(float64) / right.(float64), nil
@@ -298,4 +334,36 @@ func (i *interpreter) stringify(object any) string {
 	}
 	return fmt.Sprintf("%v", object)
 
+}
+
+// https://stackoverflow.com/a/68300217
+// Need a way to read what type of data is in nested interfaces, to make sure
+// PLUS only works on strings and floats
+func (i *interpreter) ReadStruct(st any) string {
+	return i.readStruct(reflect.ValueOf(st))
+}
+
+func (i *interpreter) readStruct(val reflect.Value) string {
+
+	// fmt.Println(val.Type().Field(i).Type.Kind())
+	if val.Kind() == reflect.Ptr {
+		val = val.Elem()
+	}
+	if val.Type() == reflect.TypeOf(Literal{}) {
+		return i.readStruct(val.Field(0))
+	}
+	switch val.Kind() {
+	case reflect.Interface:
+		// for x := 0; x < val.NumField(); x++ {
+		// 	f := val.Field(x)
+		// 	i.readStruct(f)
+		// }
+		return i.readStruct(val.Elem())
+	case reflect.Float64:
+		return "float64"
+	case reflect.String:
+		return "string"
+	}
+
+	return "nil"
 }

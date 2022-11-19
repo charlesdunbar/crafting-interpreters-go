@@ -42,7 +42,7 @@ func (p *Parser) parse() []Stmt {
 
 func (p *Parser) declaration() (Stmt, error) {
 	if p.match(FUN) {
-		return p.function("function"), nil
+		return p.function("function")
 	}
 	if p.match(VAR) {
 		return p.varDeclaration()
@@ -128,7 +128,7 @@ func (p *Parser) forStatement() (Stmt, error) {
 	if err != nil {
 		return nil, err
 	}
-	
+
 	body, err := p.statement()
 	if err != nil {
 		return nil, err
@@ -146,7 +146,7 @@ func (p *Parser) forStatement() (Stmt, error) {
 	if initializer != nil {
 		body = &Block{[]Stmt{initializer, body}}
 	}
-	
+
 	return body, nil
 }
 
@@ -256,14 +256,37 @@ func (p *Parser) expressionStatement() (Stmt, error) {
 }
 
 /*
-* Need to use *Function to return a nil if error occurs
-*/
+ * Need to use *Function to return a nil if error occurs
+ */
 func (p *Parser) function(kind string) (*Function, error) {
-	name, err := p.consume(IDENTIFIER, "Expect " + kind + " name.")
+	name, err := p.consume(IDENTIFIER, fmt.Sprintf("Expect %s name.", kind))
 	if err != nil {
 		return nil, err
 	}
-	
+	p.consume(LEFT_PAREN, fmt.Sprintf("Expect '(' after %s name.", kind))
+	var params []Token
+	if !p.check(RIGHT_PAREN) {
+		// Do-while loop
+		for {
+			if len(params) >= 255 {
+				return nil, p.error(p.peek(), "Can't have more than 255 parameters.", p.lox)
+			}
+			to_append, err := p.consume(IDENTIFIER, "Expect parameter name.")
+			if err != nil {
+				return nil, err
+			}
+			params = append(params, to_append)
+
+			// Condition part of do-while
+			if !p.match(COMMA) {
+				break
+			}
+		}
+	}
+	p.consume(RIGHT_PAREN, "Expect ')' after parameters.")
+	p.consume(LEFT_BRACE, fmt.Sprintf("Expect '{' before %s body.", kind))
+	body := p.block()
+	return &Function{name, params, body}, nil
 }
 
 func (p *Parser) block() []Stmt {
@@ -429,8 +452,8 @@ func (p *Parser) unary() (Expr, error) {
 }
 
 /*
-	finishCall checks for any arguments passed to a function and calls itself for each argument sent
-	If there are no arguments we don't try to parse
+finishCall checks for any arguments passed to a function and calls itself for each argument sent
+If there are no arguments we don't try to parse
 */
 func (p *Parser) finishCall(callee Expr) Expr {
 	var arguments []Expr

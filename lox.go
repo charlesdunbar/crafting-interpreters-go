@@ -11,11 +11,6 @@ type Lox struct {
 	hadRuntimeError bool
 }
 
-type LoxCallable interface {
-	call(*interpreter, []any) any
-	arity() int
-}
-
 func (l *Lox) RunFile(source string) {
 	f, err := os.ReadFile(source)
 	if err != nil {
