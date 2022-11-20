@@ -21,6 +21,8 @@ func (l LoxFunction) call(inter *interpreter, args []any) any {
 	for i := 0; i < len(l.declaration.params); i++ {
 		env.define(
 			l.declaration.params[i].lexeme,
+			// Stores Statements or Expressions, such as Literal or Function
+			// This causes problems as it doesn't mirror behavior as a variable does (which stores the evaluate value of an initalizer)
 			args[i],
 		)
 	}

@@ -233,7 +233,9 @@ func (i *interpreter) evaluate(expr Expr) (any, error) {
 		case MINUS:
 			return left.(float64) - right.(float64), nil
 		case PLUS:
-			// This is a treat, dealing with both how variables are stored in Literals, or if the value is static
+			// This is a treat, dealing with both how variables are stored as values for static definitions and variables
+			// But parameters bind variables as the outer Expr or Stmt type, such as Literal or Function
+			// TODO: Fix this later if still a problem
 			l := i.ReadStruct(left)
 			r := i.ReadStruct(right)
 			if l == "float64" && r == "float64" {

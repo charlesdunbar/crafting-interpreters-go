@@ -458,21 +458,20 @@ If there are no arguments we don't try to parse
 func (p *Parser) finishCall(callee Expr) Expr {
 	var arguments []Expr
 	if !p.check(RIGHT_PAREN) {
-		exp, err := p.expression()
-		if err != nil {
-			fmt.Println("Error in finish Call")
-		}
 		// Mimic do-while loop
-		arguments = append(arguments, exp)
-		for p.match(COMMA) {
+		for {
 			if len(arguments) >= 255 {
 				p.error(p.peek(), "Can't have more than 255 arguments.", p.lox)
 			}
-			exp, err = p.expression()
+			exp, err := p.expression()
 			if err != nil {
 				fmt.Println("Error in finish Call")
 			}
 			arguments = append(arguments, exp)
+
+			if !p.match(COMMA) {
+				break
+			}
 		}
 	}
 
