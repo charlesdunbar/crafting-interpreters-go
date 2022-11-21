@@ -330,9 +330,8 @@ func (p *Parser) assignment() (Expr, error) {
 		if err != nil {
 			return nil, err
 		}
-		switch e := expr.(type) {
-		case *Variable:
-			name := e.name
+		if v, ok := expr.(*Variable); ok {
+			name := v.name
 			return &Assign{name, value}, nil
 		}
 		return nil, p.error(equals, "Invalid assignment target.", p.lox)

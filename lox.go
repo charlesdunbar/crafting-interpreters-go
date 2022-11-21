@@ -44,7 +44,7 @@ func (l *Lox) run(source string) {
 	if l.hadError {
 		return
 	}
-	err := interpreter{environment: NewEnvironment()}.interpret(statements)
+	err := NewInterpreter().interpret(statements)
 	if err != nil {
 		l.runtimeError(err)
 	}

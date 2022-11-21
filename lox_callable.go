@@ -1,6 +1,6 @@
 package main
 
 type LoxCallable interface {
-	call(*interpreter, []any) any
+	call(*interpreter, []any) (any, error)
 	arity() int
 }

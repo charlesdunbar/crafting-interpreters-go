@@ -19,8 +19,8 @@ func (c clock) arity() int {
 	return 0
 }
 
-func (c clock) call(int *interpreter, args []any) any {
-	return float64(time.Now().UnixMilli() / 1000)
+func (c clock) call(int *interpreter, args []any) (any, error) {
+	return float64(time.Now().UnixMilli() / 1000), nil
 }
 
 func (c clock) String() string {
@@ -28,7 +28,7 @@ func (c clock) String() string {
 }
 
 func NewInterpreter() *interpreter {
-	global := &Environment{}
+	global := NewEnvironment()
 	env := global
 
 	global.define("clock", clock{})
@@ -149,7 +149,11 @@ func (i *interpreter) evaluate(expr Expr) (any, error) {
 		}
 		var arguments []any
 		for _, arg := range e.arguments {
-			arguments = append(arguments, arg)
+			eval, err := i.evaluate(arg)
+			if err != nil {
+				return nil, err
+			}
+			arguments = append(arguments, eval)
 		}
 
 		// Don't allow trying to call "foobar"()
@@ -162,7 +166,11 @@ func (i *interpreter) evaluate(expr Expr) (any, error) {
 		if len(arguments) != local_func.arity() {
 			return nil, NewRuntimeError(e.paren, fmt.Sprintf("Expected %d arguments but got %d.\n", local_func.arity(), len(arguments)))
 		}
-		return local_func.call(i, arguments), nil
+		ret, err := local_func.call(i, arguments)
+		if err != nil {
+			return nil, err
+		}
+		return ret, nil
 	case *Literal:
 		return e.value, nil
 	case *Logical:
@@ -243,45 +251,15 @@ func (i *interpreter) evaluate(expr Expr) (any, error) {
 		case MINUS:
 			return left.(float64) - right.(float64), nil
 		case PLUS:
-			// This is a treat, dealing with both how variables are stored as values for static definitions and variables
-			// But parameters bind variables as the outer Expr or Stmt type, such as Literal or Function
-			// TODO: Fix this later if still a problem
-			l := i.ReadStruct(left)
-			r := i.ReadStruct(right)
-			if l == "float64" && r == "float64" {
-				var real_left float64
-				var real_right float64
-				switch left.(type) {
-				case float64:
-					real_left = left.(float64)
-				case *Literal:
-					real_left = left.(*Literal).value.(float64)
+			if l, ok := left.(float64); ok {
+				if r, ok := right.(float64); ok {
+					return l + r, nil
 				}
-				switch right.(type) {
-				case float64:
-					real_right = right.(float64)
-				case *Literal:
-					real_right = right.(*Literal).value.(float64)
+			} else if l, ok := left.(string); ok {
+				if r, ok := right.(string); ok {
+					return l + r, nil
 				}
-				fmt.Printf("Adding %f and %f\n", real_left, real_right)
-				return real_left + real_right, nil
 			}
-			if l == "string" && r == "string" {
-				return fmt.Sprintf("%v", left) + fmt.Sprintf("%v", right), nil
-			}
-			// if i.ReadStruct(left) == "string" &&
-			// 	i.ReadStruct(right) == "string" {
-			// 	return left.(string) + right.(string), nil
-			// }
-			// if l, ok := left.(float64); ok {
-			// 	if r, ok := right.(float64); ok {
-			// 		return l + r, nil
-			// 	}
-			// } else if l , ok := left.(string); ok {
-			// 	if r, ok := right.(string); ok {
-			// 		return l + r, nil
-			// 	}
-			// }
 			return nil, &RuntimeError{e.operator, "operands must be two numbers or two strings."}
 		case SLASH:
 			return left.(float64) / right.(float64), nil
@@ -347,36 +325,4 @@ func (i *interpreter) stringify(object any) string {
 	}
 	return fmt.Sprintf("%v", object)
 
-}
-
-// https://stackoverflow.com/a/68300217
-// Need a way to read what type of data is in nested interfaces, to make sure
-// PLUS only works on strings and floats
-func (i *interpreter) ReadStruct(st any) string {
-	return i.readStruct(reflect.ValueOf(st))
-}
-
-func (i *interpreter) readStruct(val reflect.Value) string {
-
-	// fmt.Println(val.Type().Field(i).Type.Kind())
-	if val.Kind() == reflect.Ptr {
-		val = val.Elem()
-	}
-	if val.Type() == reflect.TypeOf(Literal{}) {
-		return i.readStruct(val.Field(0))
-	}
-	switch val.Kind() {
-	case reflect.Interface:
-		// for x := 0; x < val.NumField(); x++ {
-		// 	f := val.Field(x)
-		// 	i.readStruct(f)
-		// }
-		return i.readStruct(val.Elem())
-	case reflect.Float64:
-		return "float64"
-	case reflect.String:
-		return "string"
-	}
-
-	return "nil"
 }
