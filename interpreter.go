@@ -80,6 +80,16 @@ func (i *interpreter) execute(stmt Stmt) error {
 			return err
 		}
 		fmt.Printf("%v\n", i.stringify(value))
+	case *Return:
+		var value any
+		var err error
+		if t.value != nil {
+			value, err = i.evaluate(t.value)
+			if err != nil {
+				return err
+			}
+		}
+		return NewReturnError(value)
 	case *While:
 		// Can't chain i.evalute(t.condition) by itself, so set it as initalizer and incrementer
 		for val, err := i.evaluate(t.condition); i.isTruthy(val); val, err = i.evaluate(t.condition) {
@@ -253,6 +263,7 @@ func (i *interpreter) evaluate(expr Expr) (any, error) {
 				case *Literal:
 					real_right = right.(*Literal).value.(float64)
 				}
+				fmt.Printf("Adding %f and %f\n", real_left, real_right)
 				return real_left + real_right, nil
 			}
 			if l == "string" && r == "string" {

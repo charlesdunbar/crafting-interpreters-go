@@ -27,7 +27,13 @@ func (l LoxFunction) call(inter *interpreter, args []any) any {
 		)
 	}
 	// https://stackoverflow.com/a/44543748
-	(&interpreter{}).executeBlock(l.declaration.body, env)
+	err := (&interpreter{}).executeBlock(l.declaration.body, env)
+	if err != nil {
+		switch e := err.(type) {
+		case ReturnError:
+			return e.value
+		}
+	}
 	return nil
 }
 

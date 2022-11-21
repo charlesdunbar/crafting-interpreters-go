@@ -64,6 +64,9 @@ func (p *Parser) statement() (Stmt, error) {
 	if p.match(PRINT) {
 		return p.printStatement()
 	}
+	if p.match(RETURN) {
+		return p.returnStatement()
+	}
 	if p.match(FOR) {
 		return p.forStatement()
 	}
@@ -192,6 +195,21 @@ func (p *Parser) printStatement() (Stmt, error) {
 	}
 
 	return &Print{value}, nil
+}
+
+func (p *Parser) returnStatement() (Stmt, error) {
+	keyword := p.previous()
+	var value Expr
+	var err error
+	// If the next thing after 'return' is a semicolon, it can't be an expression
+	if (!p.check(SEMICOLON)) {
+		value, err = p.expression()
+		if err != nil {
+			return nil, err
+		}
+	}
+	p.consume(SEMICOLON, "Expect ';' after return value.")
+	return &Return{keyword, value}, nil
 }
 
 func (p *Parser) varDeclaration() (Stmt, error) {
