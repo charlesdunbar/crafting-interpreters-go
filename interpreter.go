@@ -8,7 +8,7 @@ import (
 )
 
 type interpreter struct {
-	globals     *Environment
+	globals     Environment
 	environment *Environment
 }
 
@@ -29,7 +29,7 @@ func (c clock) String() string {
 
 func NewInterpreter() *interpreter {
 	global := NewEnvironment()
-	env := global
+	env := &global
 
 	global.define("clock", clock{})
 	return &interpreter{
@@ -70,9 +70,15 @@ func (i *interpreter) execute(stmt Stmt) error {
 			return err
 		}
 		if i.isTruthy(cond) {
-			i.execute(t.thenBranch)
+			err := i.execute(t.thenBranch)
+			if err != nil {
+				return err
+			}
 		} else if t.elseBranch != nil {
-			i.execute(t.elseBranch)
+			err := i.execute(t.elseBranch)
+			if err != nil {
+				return err
+			}
 		}
 	case *Print:
 		value, err := i.evaluate(t.expression)
