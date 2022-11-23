@@ -27,9 +27,7 @@ func (l LoxFunction) call(inter *interpreter, args []any) (any, error) {
 			args[i],
 		)
 	}
-	// https://stackoverflow.com/a/44543748
 	err := inter.executeBlock(l.declaration.body, &env)
-	//fmt.Printf("About to return an error maybe with %+v\n", err)
 	if err != nil {
 		switch e := err.(type) {
 		// We actually want to use this as an exception to break early, not as an error that needs reporting
