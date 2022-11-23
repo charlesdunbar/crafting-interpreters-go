@@ -6,11 +6,13 @@ import (
 
 type LoxFunction struct {
 	declaration Function
+	closure Environment
 }
 
-func NewLoxFunction(dec Function) *LoxFunction {
+func NewLoxFunction(dec Function, clo Environment) *LoxFunction {
 	return &LoxFunction{
-		dec,
+		declaration: dec,
+		closure: clo,
 	}
 }
 
@@ -19,7 +21,7 @@ func (l LoxFunction) call(inter *interpreter, args []any) (any, error) {
 	env := Environment{
 		values: make(map[string]any),
 		// This is nil and probably shouldn't be
-		enclosing: &inter.globals,
+		enclosing: &l.closure,
 	}
 	for i := 0; i < len(l.declaration.params); i++ {
 		env.define(

@@ -62,7 +62,7 @@ func (i *interpreter) execute(stmt Stmt) error {
 			return err
 		}
 	case *Function:
-		function := LoxFunction{*t}
+		function := LoxFunction{*t, *i.environment}
 		i.environment.define(t.name.lexeme, function)
 	case *If:
 		cond, err := i.evaluate(t.condition)
