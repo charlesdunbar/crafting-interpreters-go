@@ -12,6 +12,12 @@ type Expression struct {
 	expression Expr
 }
 
+type Function struct {
+	name   Token
+	params []Token
+	body   []Stmt
+}
+
 type If struct {
 	condition  Expr
 	thenBranch Stmt
@@ -27,6 +33,11 @@ type Print struct {
 	expression Expr
 }
 
+type Return struct {
+	keyword Token
+	value   Expr
+}
+
 type While struct {
 	condition Expr
 	body      Stmt
@@ -36,10 +47,14 @@ func (e *Block) Statement() Stmt { return e }
 
 func (e *Expression) Statement() Stmt { return e }
 
+func (e *Function) Statement() Stmt { return e }
+
 func (e *If) Statement() Stmt { return e }
 
 func (e *Var) Statement() Stmt { return e }
 
 func (e *Print) Statement() Stmt { return e }
+
+func (e *Return) Statement() Stmt { return e }
 
 func (e *While) Statement() Stmt { return e }

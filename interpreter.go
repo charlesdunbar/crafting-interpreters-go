@@ -4,10 +4,38 @@ import (
 	"errors"
 	"fmt"
 	"reflect"
+	"time"
 )
 
 type interpreter struct {
+	globals     Environment
 	environment *Environment
+}
+
+// Built-in clock functionality
+type clock struct{}
+
+func (c clock) arity() int {
+	return 0
+}
+
+func (c clock) call(int *interpreter, args []any) (any, error) {
+	return float64(time.Now().UnixMilli() / 1000), nil
+}
+
+func (c clock) String() string {
+	return "<native fn>"
+}
+
+func NewInterpreter() *interpreter {
+	global := NewEnvironment()
+	env := &global
+
+	global.define("clock", clock{})
+	return &interpreter{
+		globals:     global,
+		environment: env,
+	}
 }
 
 func (i interpreter) interpret(statements []Stmt) error {
@@ -33,15 +61,24 @@ func (i *interpreter) execute(stmt Stmt) error {
 		if err != nil {
 			return err
 		}
+	case *Function:
+		function := LoxFunction{*t, *i.environment}
+		i.environment.define(t.name.lexeme, function)
 	case *If:
 		cond, err := i.evaluate(t.condition)
 		if err != nil {
 			return err
 		}
 		if i.isTruthy(cond) {
-			i.execute(t.thenBranch)
+			err := i.execute(t.thenBranch)
+			if err != nil {
+				return err
+			}
 		} else if t.elseBranch != nil {
-			i.execute(t.elseBranch)
+			err := i.execute(t.elseBranch)
+			if err != nil {
+				return err
+			}
 		}
 	case *Print:
 		value, err := i.evaluate(t.expression)
@@ -49,6 +86,16 @@ func (i *interpreter) execute(stmt Stmt) error {
 			return err
 		}
 		fmt.Printf("%v\n", i.stringify(value))
+	case *Return:
+		var value any
+		var err error
+		if t.value != nil {
+			value, err = i.evaluate(t.value)
+			if err != nil {
+				return err
+			}
+		}
+		return NewReturnError(value)
 	case *While:
 		// Can't chain i.evalute(t.condition) by itself, so set it as initalizer and incrementer
 		for val, err := i.evaluate(t.condition); i.isTruthy(val); val, err = i.evaluate(t.condition) {
@@ -101,6 +148,35 @@ func (i *interpreter) evaluate(expr Expr) (any, error) {
 			return nil, err
 		}
 		return value, nil
+	case *Call:
+		callee, err := i.evaluate(e.callee)
+		if err != nil {
+			return nil, err
+		}
+		var arguments []any
+		for _, arg := range e.arguments {
+			eval, err := i.evaluate(arg)
+			if err != nil {
+				return nil, err
+			}
+			arguments = append(arguments, eval)
+		}
+
+		// Don't allow trying to call "foobar"()
+		local_func, ok := callee.(LoxCallable)
+		if !ok {
+			return nil, NewRuntimeError(e.paren, "Can only call functions and classes.")
+		}
+
+		// Check arity of the function
+		if len(arguments) != local_func.arity() {
+			return nil, NewRuntimeError(e.paren, fmt.Sprintf("Expected %d arguments but got %d.\n", local_func.arity(), len(arguments)))
+		}
+		ret, err := local_func.call(i, arguments)
+		if err != nil {
+			return nil, err
+		}
+		return ret, nil
 	case *Literal:
 		return e.value, nil
 	case *Logical:
@@ -181,13 +257,14 @@ func (i *interpreter) evaluate(expr Expr) (any, error) {
 		case MINUS:
 			return left.(float64) - right.(float64), nil
 		case PLUS:
-			if reflect.TypeOf(left).Kind().String() == "float64" &&
-				reflect.TypeOf(right).Kind().String() == "float64" {
-				return left.(float64) + right.(float64), nil
-			}
-			if reflect.TypeOf(left).Kind().String() == "string" &&
-				reflect.TypeOf(right).Kind().String() == "string" {
-				return left.(string) + right.(string), nil
+			if l, ok := left.(float64); ok {
+				if r, ok := right.(float64); ok {
+					return l + r, nil
+				}
+			} else if l, ok := left.(string); ok {
+				if r, ok := right.(string); ok {
+					return l + r, nil
+				}
 			}
 			return nil, &RuntimeError{e.operator, "operands must be two numbers or two strings."}
 		case SLASH:

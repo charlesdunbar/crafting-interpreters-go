@@ -44,7 +44,7 @@ func (l *Lox) run(source string) {
 	if l.hadError {
 		return
 	}
-	err := interpreter{environment: NewEnvironment()}.interpret(statements)
+	err := NewInterpreter().interpret(statements)
 	if err != nil {
 		l.runtimeError(err)
 	}
@@ -60,7 +60,7 @@ func (l *Lox) report(line int, where string, message string) {
 	fmt.Printf("[line %d] Error%s: %s\n", line, where, message)
 }
 
-func (l Lox) tokenError(token Token, message string) {
+func (l *Lox) tokenError(token Token, message string) {
 	if token.l_type == EOF {
 		l.report(token.line, " at end", message)
 	} else {

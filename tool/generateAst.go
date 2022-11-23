@@ -21,6 +21,7 @@ func main() {
 	defineAst(outputDir, "Expr", []string{
 		"Assign    : name Token, value Expr",
 		"Binary    : left Expr, operator Token, right Expr",
+		"Call	   : callee Expr, paren Token, arguments []Expr",
 		"Grouping  : expression Expr",
 		"Literal   : value any",
 		"Logical   : left Expr, operator Token, right Expr",
@@ -31,9 +32,11 @@ func main() {
 	defineAst(outputDir, "Stmt", []string{
 		"Block      : statements []Stmt",
 		"Expression : expression Expr",
+		"Function   : name Token, params []Token, body []Stmt",
 		"If         : condition Expr, thenBranch Stmt, elseBranch Stmt",
 		"Var        : name Token, initializer Expr",
 		"Print      : expression Expr",
+		"Return     : keyword Token, value Expr",
 		"While      : condition Expr, body Stmt",
 	})
 }
@@ -75,7 +78,6 @@ func defineAst(outputDir string, baseName string, types []string) {
 
 func defineType(writer *bytes.Buffer, baseName, className, fieldList string) {
 	writer.WriteString("type " + className + " struct {\n")
-	//writer.WriteString("	Expr\n")
 	fields := strings.Split(fieldList, ", ")
 	for _, f := range fields {
 		name := strings.Split(f, " ")[0]

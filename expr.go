@@ -15,6 +15,12 @@ type Binary struct {
 	right    Expr
 }
 
+type Call struct {
+	callee    Expr
+	paren     Token
+	arguments []Expr
+}
+
 type Grouping struct {
 	expression Expr
 }
@@ -41,6 +47,8 @@ type Unary struct {
 func (e *Assign) Expression() Expr { return e }
 
 func (e *Binary) Expression() Expr { return e }
+
+func (e *Call) Expression() Expr { return e }
 
 func (e *Grouping) Expression() Expr { return e }
 

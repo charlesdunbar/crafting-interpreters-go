@@ -41,6 +41,9 @@ func (p *Parser) parse() []Stmt {
 }
 
 func (p *Parser) declaration() (Stmt, error) {
+	if p.match(FUN) {
+		return p.function("function")
+	}
 	if p.match(VAR) {
 		return p.varDeclaration()
 	}
@@ -60,6 +63,9 @@ func (p *Parser) statement() (Stmt, error) {
 	}
 	if p.match(PRINT) {
 		return p.printStatement()
+	}
+	if p.match(RETURN) {
+		return p.returnStatement()
 	}
 	if p.match(FOR) {
 		return p.forStatement()
@@ -125,7 +131,7 @@ func (p *Parser) forStatement() (Stmt, error) {
 	if err != nil {
 		return nil, err
 	}
-	
+
 	body, err := p.statement()
 	if err != nil {
 		return nil, err
@@ -143,7 +149,7 @@ func (p *Parser) forStatement() (Stmt, error) {
 	if initializer != nil {
 		body = &Block{[]Stmt{initializer, body}}
 	}
-	
+
 	return body, nil
 }
 
@@ -189,6 +195,21 @@ func (p *Parser) printStatement() (Stmt, error) {
 	}
 
 	return &Print{value}, nil
+}
+
+func (p *Parser) returnStatement() (Stmt, error) {
+	keyword := p.previous()
+	var value Expr
+	var err error
+	// If the next thing after 'return' is a semicolon, it can't be an expression
+	if (!p.check(SEMICOLON)) {
+		value, err = p.expression()
+		if err != nil {
+			return nil, err
+		}
+	}
+	p.consume(SEMICOLON, "Expect ';' after return value.")
+	return &Return{keyword, value}, nil
 }
 
 func (p *Parser) varDeclaration() (Stmt, error) {
@@ -252,6 +273,40 @@ func (p *Parser) expressionStatement() (Stmt, error) {
 	return &Expression{expr}, nil
 }
 
+/*
+ * Need to use *Function to return a nil if error occurs
+ */
+func (p *Parser) function(kind string) (*Function, error) {
+	name, err := p.consume(IDENTIFIER, fmt.Sprintf("Expect %s name.", kind))
+	if err != nil {
+		return nil, err
+	}
+	p.consume(LEFT_PAREN, fmt.Sprintf("Expect '(' after %s name.", kind))
+	var params []Token
+	if !p.check(RIGHT_PAREN) {
+		// Do-while loop
+		for {
+			if len(params) >= 255 {
+				return nil, p.error(p.peek(), "Can't have more than 255 parameters.", p.lox)
+			}
+			to_append, err := p.consume(IDENTIFIER, "Expect parameter name.")
+			if err != nil {
+				return nil, err
+			}
+			params = append(params, to_append)
+
+			// Condition part of do-while
+			if !p.match(COMMA) {
+				break
+			}
+		}
+	}
+	p.consume(RIGHT_PAREN, "Expect ')' after parameters.")
+	p.consume(LEFT_BRACE, fmt.Sprintf("Expect '{' before %s body.", kind))
+	body := p.block()
+	return &Function{name, params, body}, nil
+}
+
 func (p *Parser) block() []Stmt {
 	var statements []Stmt
 
@@ -275,9 +330,8 @@ func (p *Parser) assignment() (Expr, error) {
 		if err != nil {
 			return nil, err
 		}
-		switch e := expr.(type) {
-		case *Variable:
-			name := e.name
+		if v, ok := expr.(*Variable); ok {
+			name := v.name
 			return &Assign{name, value}, nil
 		}
 		return nil, p.error(equals, "Invalid assignment target.", p.lox)
@@ -407,11 +461,61 @@ func (p *Parser) unary() (Expr, error) {
 		}
 		return &Unary{operator, right}, nil
 	}
-	x, err := p.primary()
+	ret, err := p.call()
 	if err != nil {
 		return nil, err
 	}
-	return x, nil
+	return ret, nil
+}
+
+/*
+finishCall checks for any arguments passed to a function and calls itself for each argument sent
+If there are no arguments we don't try to parse
+*/
+func (p *Parser) finishCall(callee Expr) Expr {
+	var arguments []Expr
+	if !p.check(RIGHT_PAREN) {
+		// Mimic do-while loop
+		for {
+			if len(arguments) >= 255 {
+				p.error(p.peek(), "Can't have more than 255 arguments.", p.lox)
+			}
+			exp, err := p.expression()
+			if err != nil {
+				fmt.Println("Error in finish Call")
+			}
+			arguments = append(arguments, exp)
+
+			if !p.match(COMMA) {
+				break
+			}
+		}
+	}
+
+	paren, err := p.consume(RIGHT_PAREN, "Expect ')' after arguments.")
+	if err != nil {
+		fmt.Println("Error in finish Call consume")
+	}
+
+	return &Call{callee, paren, arguments}
+
+}
+
+func (p *Parser) call() (Expr, error) {
+	expr, err := p.primary()
+	if err != nil {
+		return nil, err
+	}
+
+	for {
+		if p.match(LEFT_PAREN) {
+			expr = p.finishCall(expr)
+		} else {
+			break
+		}
+	}
+
+	return expr, nil
 }
 
 func (p *Parser) primary() (Expr, error) {
