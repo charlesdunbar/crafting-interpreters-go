@@ -7,7 +7,6 @@ import (
 type Parser struct {
 	tokens  []Token
 	current int
-	lox     *Lox
 }
 
 type ParseError struct {
@@ -22,7 +21,6 @@ func NewParser(tokens []Token, l *Lox) *Parser {
 	return &Parser{
 		current: 0,
 		tokens:  tokens,
-		lox:     l,
 	}
 }
 
@@ -287,7 +285,7 @@ func (p *Parser) function(kind string) (*Function, error) {
 		// Do-while loop
 		for {
 			if len(params) >= 255 {
-				return nil, p.error(p.peek(), "Can't have more than 255 parameters.", p.lox)
+				return nil, p.error(p.peek(), "Can't have more than 255 parameters.")
 			}
 			to_append, err := p.consume(IDENTIFIER, "Expect parameter name.")
 			if err != nil {
@@ -334,7 +332,7 @@ func (p *Parser) assignment() (Expr, error) {
 			name := v.name
 			return &Assign{name, value}, nil
 		}
-		return nil, p.error(equals, "Invalid assignment target.", p.lox)
+		return nil, p.error(equals, "Invalid assignment target.")
 	}
 	return expr, nil
 }
@@ -478,7 +476,7 @@ func (p *Parser) finishCall(callee Expr) Expr {
 		// Mimic do-while loop
 		for {
 			if len(arguments) >= 255 {
-				p.error(p.peek(), "Can't have more than 255 arguments.", p.lox)
+				p.error(p.peek(), "Can't have more than 255 arguments.")
 			}
 			exp, err := p.expression()
 			if err != nil {
@@ -546,7 +544,7 @@ func (p *Parser) primary() (Expr, error) {
 		return &Grouping{expr}, nil
 	}
 
-	return nil, p.error(p.peek(), "Expect expression.", p.lox)
+	return nil, p.error(p.peek(), "Expect expression.")
 }
 
 func (p *Parser) match(types ...TokenType) bool {
@@ -563,7 +561,7 @@ func (p *Parser) consume(l_type TokenType, message string) (Token, error) {
 	if p.check(l_type) {
 		return p.advance(), nil
 	}
-	return Token{}, p.error(p.peek(), message, p.lox)
+	return Token{}, p.error(p.peek(), message)
 }
 
 func (p *Parser) check(l_type TokenType) bool {
@@ -592,8 +590,8 @@ func (p *Parser) previous() Token {
 	return p.tokens[p.current-1]
 }
 
-func (p *Parser) error(token Token, message string, l *Lox) error {
-	l.tokenError(token, message)
+func (p *Parser) error(token Token, message string) error {
+	tokenError(token, message)
 	return ParseError{}
 }
 
