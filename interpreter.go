@@ -286,7 +286,7 @@ func (i *interpreter) evaluate(expr Expr) (any, error) {
 		// Unreachable
 		return nil, ParseError{err}
 	case *Variable:
-		return i.environment.get(e.name)
+		return i.lookUpVariable(e.name, e)
 	}
 	return nil, ParseError{errors.New("unreachable code error")}
 }
