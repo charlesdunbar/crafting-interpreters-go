@@ -83,12 +83,14 @@ func (r Resolver) expr_resolve(expr Expr) error {
 	case *Unary:
 		r.expr_resolve(t.right)
 	case *Variable:
-		front, ok := r.scopes.Front().Value.(map[string]bool)
-		if !ok {
-			panic("variable in expr_resolve can't cast correctly, scopes should only have map[string]bool types")
-		}
-		if r.scopes.Len() == 0 && !front[t.name.lexeme] {
-			tokenError(t.name, "Can't read local variable in its own initializer.")
+		if r.scopes.Len() != 0 {
+			front, ok := r.scopes.Front().Value.(map[string]bool)
+			if !ok {
+				panic("variable in expr_resolve can't cast correctly, scopes should only have map[string]bool types")
+			}
+			if !front[t.name.lexeme] {
+				tokenError(t.name, "Can't read local variable in its own initializer.")
+			}
 		}
 		r.resolveLocal(t, t.name)
 	}
