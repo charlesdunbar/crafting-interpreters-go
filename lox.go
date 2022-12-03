@@ -10,7 +10,13 @@ var hadError bool
 var hadRuntimeError bool
 
 type Lox struct {
+	interpreter interpreter
+}
 
+func NewLox() Lox {
+	return Lox{
+		interpreter: *NewInterpreter(),
+	}
 }
 
 func (l *Lox) RunFile(source string) {
@@ -46,7 +52,11 @@ func (l *Lox) run(source string) {
 	if hadError {
 		return
 	}
-	err := NewInterpreter().interpret(statements)
+	
+	resolver := Resolver{interpreter: l.interpreter}
+	resolver.resolve_stmts(statements)
+
+	err := l.interpreter.interpret(statements)
 	if err != nil {
 		runtimeError(err)
 	}

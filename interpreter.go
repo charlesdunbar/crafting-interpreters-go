@@ -10,6 +10,7 @@ import (
 type interpreter struct {
 	globals     Environment
 	environment *Environment
+	locals      map[Expr]int
 }
 
 // Built-in clock functionality
@@ -35,6 +36,7 @@ func NewInterpreter() *interpreter {
 	return &interpreter{
 		globals:     global,
 		environment: env,
+		locals:      make(map[Expr]int),
 	}
 }
 
@@ -120,6 +122,10 @@ func (i *interpreter) execute(stmt Stmt) error {
 	return nil
 }
 
+func (i *interpreter) resolve(expr Expr, depth int) {
+	i.locals[expr] = depth
+}
+
 func (i *interpreter) executeBlock(statements []Stmt, env *Environment) error {
 	previous := i.environment
 	// Mimic "finally" block
@@ -143,10 +149,15 @@ func (i *interpreter) evaluate(expr Expr) (any, error) {
 		if err != nil {
 			return nil, err
 		}
-		err = i.environment.assign(e.name, value)
-		if err != nil {
-			return nil, err
+		if distance, ok := i.locals[expr]; ok {
+			i.environment.assignAt(distance, e.name, value)
+		} else {
+			err = i.globals.assign(e.name, value)
+			if err != nil {
+				return nil, err
+			}
 		}
+
 		return value, nil
 	case *Call:
 		callee, err := i.evaluate(e.callee)
@@ -278,6 +289,14 @@ func (i *interpreter) evaluate(expr Expr) (any, error) {
 		return i.environment.get(e.name)
 	}
 	return nil, ParseError{errors.New("unreachable code error")}
+}
+
+func (i *interpreter) lookUpVariable(name Token, expr Expr) (any, error) {
+	if distance, ok := i.locals[expr]; ok {
+		return i.environment.getAt(distance, name.lexeme), nil
+	}
+	return i.globals.get(name)
+
 }
 
 func (i *interpreter) isTruthy(obj any) bool {

@@ -13,14 +13,30 @@ func NewEnvironment() Environment {
 }
 
 /*
-	Define a variable in an environment, used with assigning later on
+Define a variable in an environment, used with assigning later on
 */
 func (e *Environment) define(name string, value any) {
 	e.values[name] = value
 }
 
+func (e *Environment) getAt(distance int, name string) any {
+	return e.ancestor(distance).values[name]
+}
+
+func (e *Environment) assignAt(distance int, name Token, value any) {
+	e.ancestor(distance).values[name.lexeme] = value
+}
+
+func (e *Environment) ancestor(distance int) *Environment {
+	env := e
+	for i := 0; i < distance; i++ {
+		env = env.enclosing
+	}
+	return env
+}
+
 /*
-	Get a variable from an environment
+Get a variable from an environment
 */
 func (e *Environment) get(name Token) (any, error) {
 	if val, ok := e.values[name.lexeme]; ok {
@@ -38,7 +54,7 @@ func (e *Environment) get(name Token) (any, error) {
 }
 
 /*
-	Assign a variable to an environment, erroring if it's undefined.
+Assign a variable to an environment, erroring if it's undefined.
 */
 func (e *Environment) assign(name Token, value any) error {
 	if _, ok := e.values[name.lexeme]; ok {
