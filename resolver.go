@@ -117,11 +117,11 @@ func (r Resolver) resolveFunction(function Function) {
 }
 
 // Stack fun from https://medium.com/@dinesht.bits/stack-queue-implementations-in-golang-1136345036b4
-func (r Resolver) beginScope() {
+func (r *Resolver) beginScope() {
 	r.scopes.PushBack(make(map[string]bool))
 }
 
-func (r Resolver) endScope() {
+func (r *Resolver) endScope() {
 	r.scopes.Remove(r.scopes.Back())
 }
 
