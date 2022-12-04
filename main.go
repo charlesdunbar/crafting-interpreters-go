@@ -6,7 +6,7 @@ import (
 )
 
 func main() {
-	lox := Lox{false, false}
+	lox := NewLox()
 	cmdArgs := os.Args[1:]
 
 	if len(cmdArgs) == 0 {

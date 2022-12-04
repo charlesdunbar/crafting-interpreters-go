@@ -123,7 +123,7 @@ func (s *Scanner) scanToken(l *Lox) {
 		} else if s.isAlpha(c) {
 			s.identifier()
 		} else {
-			l.error(s.line, "Unexpected character.")
+			lox_error(s.line, "Unexpected character.")
 		}
 	}
 }
@@ -199,7 +199,7 @@ func (s *Scanner) string(l *Lox) {
 	}
 
 	if s.isAtEnd() {
-		l.error(s.line, "Unterminated string.")
+		lox_error(s.line, "Unterminated string.")
 		return
 	}
 
@@ -219,7 +219,7 @@ func (s *Scanner) multiComment(l *Lox) {
 	}
 
 	if s.isAtEnd() {
-		l.error(s.line, "Unterminated multiline comment.")
+		lox_error(s.line, "Unterminated multiline comment.")
 		return
 	}
 
