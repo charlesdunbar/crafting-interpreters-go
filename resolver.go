@@ -4,16 +4,25 @@ import (
 	"container/list"
 )
 
+type FunctionType int64
+
+const (
+	NONE FunctionType = iota
+	FUNCTION
+)
+
 type Resolver struct {
-	interpreter interpreter
-	scopes      list.List
+	interpreter     interpreter
+	scopes          list.List
+	currentFunction FunctionType
 }
 
 func (r Resolver) NewResolver() Resolver {
 	return Resolver{
 		// Is this the right thing I need?
-		interpreter: *NewInterpreter(),
-		scopes:      *list.New(),
+		interpreter:     *NewInterpreter(),
+		scopes:          *list.New(),
+		currentFunction: NONE,
 	}
 }
 
@@ -31,7 +40,7 @@ func (r Resolver) stmt_resolve(stmt Stmt) error {
 	case *Function:
 		r.declare(t.name)
 		r.define(t.name)
-		r.resolveFunction(*t)
+		r.resolveFunction(*t, FUNCTION)
 	case *If:
 		r.expr_resolve(t.condition)
 		r.stmt_resolve(t.thenBranch)
@@ -41,6 +50,9 @@ func (r Resolver) stmt_resolve(stmt Stmt) error {
 	case *Print:
 		r.expr_resolve(t.expression)
 	case *Return:
+		if r.currentFunction == NONE {
+			tokenError(t.keyword, "Can't return from top-level code.")
+		}
 		if t.value != nil {
 			r.expr_resolve(t.value)
 		}
@@ -107,13 +119,17 @@ func (r Resolver) resolve_stmts(stmts []Stmt) error {
 	return nil
 }
 
-func (r Resolver) resolveFunction(function Function) {
+func (r *Resolver) resolveFunction(function Function, t FunctionType) {
+	enclosingFunction := r.currentFunction
+	r.currentFunction = t
 	r.beginScope()
 	for _, param := range function.params {
 		r.declare(param)
 		r.define(param)
 	}
 	r.resolve_stmts(function.body)
+	r.endScope()
+	r.currentFunction = enclosingFunction
 }
 
 // Stack fun from https://medium.com/@dinesht.bits/stack-queue-implementations-in-golang-1136345036b4
@@ -132,6 +148,9 @@ func (r Resolver) declare(name Token) {
 	scope, ok := r.scopes.Front().Value.(map[string]bool)
 	if !ok {
 		panic("declare somehow can't cast correctly, scopes should only have map[string]bool types")
+	}
+	if _, ok := scope[name.lexeme]; ok {
+		tokenError(name, "Already a variable with this name in this scope.")
 	}
 	scope[name.lexeme] = false
 }
