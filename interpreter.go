@@ -58,6 +58,13 @@ func (i *interpreter) execute(stmt Stmt) error {
 		if err != nil {
 			return err
 		}
+	case *Class:
+		i.environment.define(t.name.lexeme, nil)
+		c := NewLoxClass(t.name.lexeme)
+		err := i.environment.assign(t.name, c)
+		if err != nil {
+			return err
+		}
 	case *Expression:
 		_, err := i.evaluate(t.expression)
 		if err != nil {

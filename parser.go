@@ -39,6 +39,9 @@ func (p *Parser) parse() []Stmt {
 }
 
 func (p *Parser) declaration() (Stmt, error) {
+	if p.match(CLASS) {
+		return p.classDeclaration()
+	}
 	if p.match(FUN) {
 		return p.function("function")
 	}
@@ -53,6 +56,31 @@ func (p *Parser) declaration() (Stmt, error) {
 		return nil, err
 	}
 	return state, nil
+}
+
+func (p *Parser) classDeclaration() (Stmt, error) {
+	name, err := p.consume(IDENTIFIER, "Expect class name")
+	if err != nil {
+		return nil, err
+	}
+	_, err = p.consume(LEFT_BRACE, "Expect '{' before class body.")
+	if err != nil {
+		return nil, err
+	}
+
+	var methods []Function
+	for !p.check(RIGHT_BRACE) && !p.isAtEnd() {
+		meth, err := p.function("method")
+		if err != nil {
+			return nil, err
+		}
+		methods = append(methods, *meth)
+	}
+	_, err = p.consume(RIGHT_BRACE, "Expect '}' after class body.")
+	if err != nil {
+		return nil, err
+	}
+	return &Class{name: name, methods: methods}, nil
 }
 
 func (p *Parser) statement() (Stmt, error) {

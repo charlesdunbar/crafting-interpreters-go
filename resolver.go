@@ -30,6 +30,9 @@ func (r *Resolver) stmt_resolve(stmt Stmt) error {
 			return err
 		}
 		r.endScope()
+	case *Class:
+		r.declare(t.name)
+		r.define(t.name)
 	case *Expression:
 		r.expr_resolve(t.expression)
 	case *Function:

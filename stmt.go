@@ -8,6 +8,11 @@ type Block struct {
 	statements []Stmt
 }
 
+type Class struct {
+	name    Token
+	methods []Function
+}
+
 type Expression struct {
 	expression Expr
 }
@@ -44,6 +49,8 @@ type While struct {
 }
 
 func (e *Block) Statement() Stmt { return e }
+
+func (e *Class) Statement() Stmt { return e }
 
 func (e *Expression) Statement() Stmt { return e }
 
