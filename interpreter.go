@@ -104,7 +104,10 @@ func (i *interpreter) execute(stmt Stmt) error {
 			if err != nil {
 				return err
 			}
-			i.execute(t.body)
+			err := i.execute(t.body)
+			if err != nil {
+				return err
+			}
 		}
 	case *Var:
 		var value any

@@ -17,7 +17,7 @@ type Resolver struct {
 	currentFunction FunctionType
 }
 
-func (r Resolver) NewResolver() Resolver {
+func (r *Resolver) NewResolver() Resolver {
 	return Resolver{
 		// Is this the right thing I need?
 		interpreter:     *NewInterpreter(),
@@ -26,7 +26,7 @@ func (r Resolver) NewResolver() Resolver {
 	}
 }
 
-func (r Resolver) stmt_resolve(stmt Stmt) error {
+func (r *Resolver) stmt_resolve(stmt Stmt) error {
 	switch t := stmt.(type) {
 	case *Block:
 		r.beginScope()
@@ -69,7 +69,7 @@ func (r Resolver) stmt_resolve(stmt Stmt) error {
 	return nil
 }
 
-func (r Resolver) expr_resolve(expr Expr) error {
+func (r *Resolver) expr_resolve(expr Expr) error {
 	switch t := expr.(type) {
 	case *Assign:
 		err := r.expr_resolve(t.value)
@@ -100,8 +100,12 @@ func (r Resolver) expr_resolve(expr Expr) error {
 			if !ok {
 				panic("variable in expr_resolve can't cast correctly, scopes should only have map[string]bool types")
 			}
-			if !front[t.name.lexeme] {
-				tokenError(t.name, "Can't read local variable in its own initializer.")
+			// Fun check to see if map[string]bool exists, and if it does, if the value is false
+			// Extra fun around the default value of bools being false
+			if v, ok := front[t.name.lexeme]; ok {
+				if !v {
+					tokenError(t.name, "Can't read local variable in its own initializer.")
+				}
 			}
 		}
 		r.resolveLocal(t, t.name)
@@ -109,7 +113,7 @@ func (r Resolver) expr_resolve(expr Expr) error {
 	return nil
 }
 
-func (r Resolver) resolve_stmts(stmts []Stmt) error {
+func (r *Resolver) resolve_stmts(stmts []Stmt) error {
 	for _, stmt := range stmts {
 		err := r.stmt_resolve(stmt)
 		if err != nil {
@@ -141,7 +145,7 @@ func (r *Resolver) endScope() {
 	r.scopes.Remove(r.scopes.Back())
 }
 
-func (r Resolver) declare(name Token) {
+func (r *Resolver) declare(name Token) {
 	if r.scopes.Len() == 0 {
 		return
 	}
@@ -155,7 +159,7 @@ func (r Resolver) declare(name Token) {
 	scope[name.lexeme] = false
 }
 
-func (r Resolver) define(name Token) {
+func (r *Resolver) define(name Token) {
 	if r.scopes.Len() == 0 {
 		return
 	}
@@ -167,7 +171,7 @@ func (r Resolver) define(name Token) {
 
 }
 
-func (r Resolver) resolveLocal(expr Expr, name Token) {
+func (r *Resolver) resolveLocal(expr Expr, name Token) {
 	for i := r.scopes.Len() - 1; i >= 0; i-- {
 		scope, ok := r.scopes.Front().Value.(map[string]bool)
 		if !ok {
