@@ -1,9 +1,5 @@
 package main
 
-import (
-	"container/list"
-)
-
 type FunctionType int64
 
 const (
@@ -13,20 +9,19 @@ const (
 
 type Resolver struct {
 	interpreter     interpreter
-	scopes          list.List
+	scopes          []map[string]bool
 	currentFunction FunctionType
 }
 
-func (r Resolver) NewResolver() Resolver {
+func (r *Resolver) NewResolver() Resolver {
 	return Resolver{
-		// Is this the right thing I need?
 		interpreter:     *NewInterpreter(),
-		scopes:          *list.New(),
+		scopes:          make([]map[string]bool, 0),
 		currentFunction: NONE,
 	}
 }
 
-func (r Resolver) stmt_resolve(stmt Stmt) error {
+func (r *Resolver) stmt_resolve(stmt Stmt) error {
 	switch t := stmt.(type) {
 	case *Block:
 		r.beginScope()
@@ -69,7 +64,7 @@ func (r Resolver) stmt_resolve(stmt Stmt) error {
 	return nil
 }
 
-func (r Resolver) expr_resolve(expr Expr) error {
+func (r *Resolver) expr_resolve(expr Expr) error {
 	switch t := expr.(type) {
 	case *Assign:
 		err := r.expr_resolve(t.value)
@@ -95,13 +90,14 @@ func (r Resolver) expr_resolve(expr Expr) error {
 	case *Unary:
 		r.expr_resolve(t.right)
 	case *Variable:
-		if r.scopes.Len() != 0 {
-			front, ok := r.scopes.Front().Value.(map[string]bool)
-			if !ok {
-				panic("variable in expr_resolve can't cast correctly, scopes should only have map[string]bool types")
-			}
-			if !front[t.name.lexeme] {
-				tokenError(t.name, "Can't read local variable in its own initializer.")
+		if len(r.scopes) != 0 {
+			front := r.scopes[len(r.scopes)-1]
+			// Fun check to see if map[string]bool exists, and if it does, if the value is false
+			// Extra fun around the default value of bools being false
+			if v, ok := front[t.name.lexeme]; ok {
+				if !v {
+					tokenError(t.name, "Can't read local variable in its own initializer.")
+				}
 			}
 		}
 		r.resolveLocal(t, t.name)
@@ -109,7 +105,7 @@ func (r Resolver) expr_resolve(expr Expr) error {
 	return nil
 }
 
-func (r Resolver) resolve_stmts(stmts []Stmt) error {
+func (r *Resolver) resolve_stmts(stmts []Stmt) error {
 	for _, stmt := range stmts {
 		err := r.stmt_resolve(stmt)
 		if err != nil {
@@ -132,49 +128,39 @@ func (r *Resolver) resolveFunction(function Function, t FunctionType) {
 	r.currentFunction = enclosingFunction
 }
 
-// Stack fun from https://medium.com/@dinesht.bits/stack-queue-implementations-in-golang-1136345036b4
 func (r *Resolver) beginScope() {
-	r.scopes.PushBack(make(map[string]bool))
+	r.scopes = append(r.scopes, map[string]bool{})
 }
 
 func (r *Resolver) endScope() {
-	r.scopes.Remove(r.scopes.Back())
+	r.scopes = r.scopes[:len(r.scopes)-1] // Pop a slice
 }
 
-func (r Resolver) declare(name Token) {
-	if r.scopes.Len() == 0 {
+func (r *Resolver) declare(name Token) {
+	if len(r.scopes) == 0 {
 		return
 	}
-	scope, ok := r.scopes.Front().Value.(map[string]bool)
-	if !ok {
-		panic("declare somehow can't cast correctly, scopes should only have map[string]bool types")
-	}
+	scope := r.scopes[len(r.scopes)-1]
 	if _, ok := scope[name.lexeme]; ok {
 		tokenError(name, "Already a variable with this name in this scope.")
 	}
 	scope[name.lexeme] = false
 }
 
-func (r Resolver) define(name Token) {
-	if r.scopes.Len() == 0 {
+func (r *Resolver) define(name Token) {
+	if len(r.scopes) == 0 {
 		return
 	}
-	scope, ok := r.scopes.Front().Value.(map[string]bool)
-	if !ok {
-		panic("define somehow can't cast correctly, scopes should only have map[string]bool types")
-	}
+	scope := r.scopes[len(r.scopes)-1]
 	scope[name.lexeme] = true
 
 }
 
-func (r Resolver) resolveLocal(expr Expr, name Token) {
-	for i := r.scopes.Len() - 1; i >= 0; i-- {
-		scope, ok := r.scopes.Front().Value.(map[string]bool)
-		if !ok {
-			panic("resolveLocal somehow can't cast correctly, scopes should only have map[string]bool types")
-		}
+func (r *Resolver) resolveLocal(expr Expr, name Token) {
+	for i := len(r.scopes) - 1; i >= 0; i-- {
+		scope := r.scopes[i]
 		if _, ok := scope[name.lexeme]; ok {
-			r.interpreter.resolve(expr, r.scopes.Len()-1-i)
+			r.interpreter.resolve(expr, len(r.scopes)-1-i)
 			return
 		}
 	}
