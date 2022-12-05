@@ -91,7 +91,7 @@ func (r *Resolver) expr_resolve(expr Expr) error {
 		r.expr_resolve(t.right)
 	case *Variable:
 		if len(r.scopes) != 0 {
-			front := r.scopes[0]
+			front := r.scopes[len(r.scopes)-1]
 			// Fun check to see if map[string]bool exists, and if it does, if the value is false
 			// Extra fun around the default value of bools being false
 			if v, ok := front[t.name.lexeme]; ok {
@@ -129,7 +129,7 @@ func (r *Resolver) resolveFunction(function Function, t FunctionType) {
 }
 
 func (r *Resolver) beginScope() {
-	r.scopes = append(r.scopes, make(map[string]bool)) // Push a slice
+	r.scopes = append(r.scopes, map[string]bool{})
 }
 
 func (r *Resolver) endScope() {
@@ -140,7 +140,7 @@ func (r *Resolver) declare(name Token) {
 	if len(r.scopes) == 0 {
 		return
 	}
-	scope := r.scopes[0]
+	scope := r.scopes[len(r.scopes)-1]
 	if _, ok := scope[name.lexeme]; ok {
 		tokenError(name, "Already a variable with this name in this scope.")
 	}
@@ -151,7 +151,7 @@ func (r *Resolver) define(name Token) {
 	if len(r.scopes) == 0 {
 		return
 	}
-	scope := r.scopes[0]
+	scope := r.scopes[len(r.scopes)-1]
 	scope[name.lexeme] = true
 
 }
