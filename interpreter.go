@@ -186,7 +186,7 @@ func (i *interpreter) evaluate(expr Expr) (any, error) {
 		// Don't allow trying to call "foobar"()
 		local_func, ok := callee.(LoxCallable)
 		if !ok {
-			return nil, NewRuntimeError(e.paren, "Can only call functions and classes.")
+			return nil, NewRuntimeError(e.paren, fmt.Sprintf("Can only call functions and classes. Got data of type %T", callee))
 		}
 
 		// Check arity of the function

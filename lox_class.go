@@ -13,3 +13,12 @@ func NewLoxClass(name string) LoxClass {
 func (l LoxClass) String() string {
 	return l.name
 }
+
+func (l LoxClass) call(inter *interpreter, args []any) (any, error) {
+	instance := NewLoxInstance(l)
+	return instance, nil
+}
+
+func (l LoxClass) arity() int {
+	return 0
+}
