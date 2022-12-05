@@ -1,9 +1,5 @@
 package main
 
-import (
-	"container/list"
-)
-
 type FunctionType int64
 
 const (
@@ -13,15 +9,14 @@ const (
 
 type Resolver struct {
 	interpreter     interpreter
-	scopes          list.List
+	scopes          []map[string]bool
 	currentFunction FunctionType
 }
 
 func (r *Resolver) NewResolver() Resolver {
 	return Resolver{
-		// Is this the right thing I need?
 		interpreter:     *NewInterpreter(),
-		scopes:          *list.New(),
+		scopes:          make([]map[string]bool, 0),
 		currentFunction: NONE,
 	}
 }
@@ -95,11 +90,8 @@ func (r *Resolver) expr_resolve(expr Expr) error {
 	case *Unary:
 		r.expr_resolve(t.right)
 	case *Variable:
-		if r.scopes.Len() != 0 {
-			front, ok := r.scopes.Front().Value.(map[string]bool)
-			if !ok {
-				panic("variable in expr_resolve can't cast correctly, scopes should only have map[string]bool types")
-			}
+		if len(r.scopes) != 0 {
+			front := r.scopes[0]
 			// Fun check to see if map[string]bool exists, and if it does, if the value is false
 			// Extra fun around the default value of bools being false
 			if v, ok := front[t.name.lexeme]; ok {
@@ -136,23 +128,19 @@ func (r *Resolver) resolveFunction(function Function, t FunctionType) {
 	r.currentFunction = enclosingFunction
 }
 
-// Stack fun from https://medium.com/@dinesht.bits/stack-queue-implementations-in-golang-1136345036b4
 func (r *Resolver) beginScope() {
-	r.scopes.PushBack(make(map[string]bool))
+	r.scopes = append(r.scopes, make(map[string]bool)) // Push a slice
 }
 
 func (r *Resolver) endScope() {
-	r.scopes.Remove(r.scopes.Back())
+	r.scopes = r.scopes[:len(r.scopes)-1] // Pop a slice
 }
 
 func (r *Resolver) declare(name Token) {
-	if r.scopes.Len() == 0 {
+	if len(r.scopes) == 0 {
 		return
 	}
-	scope, ok := r.scopes.Front().Value.(map[string]bool)
-	if !ok {
-		panic("declare somehow can't cast correctly, scopes should only have map[string]bool types")
-	}
+	scope := r.scopes[0]
 	if _, ok := scope[name.lexeme]; ok {
 		tokenError(name, "Already a variable with this name in this scope.")
 	}
@@ -160,25 +148,19 @@ func (r *Resolver) declare(name Token) {
 }
 
 func (r *Resolver) define(name Token) {
-	if r.scopes.Len() == 0 {
+	if len(r.scopes) == 0 {
 		return
 	}
-	scope, ok := r.scopes.Front().Value.(map[string]bool)
-	if !ok {
-		panic("define somehow can't cast correctly, scopes should only have map[string]bool types")
-	}
+	scope := r.scopes[0]
 	scope[name.lexeme] = true
 
 }
 
 func (r *Resolver) resolveLocal(expr Expr, name Token) {
-	for i := r.scopes.Len() - 1; i >= 0; i-- {
-		scope, ok := r.scopes.Front().Value.(map[string]bool)
-		if !ok {
-			panic("resolveLocal somehow can't cast correctly, scopes should only have map[string]bool types")
-		}
+	for i := len(r.scopes) - 1; i >= 0; i-- {
+		scope := r.scopes[i]
 		if _, ok := scope[name.lexeme]; ok {
-			r.interpreter.resolve(expr, r.scopes.Len()-1-i)
+			r.interpreter.resolve(expr, len(r.scopes)-1-i)
 			return
 		}
 	}

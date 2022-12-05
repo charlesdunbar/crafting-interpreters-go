@@ -53,11 +53,11 @@ func (l *Lox) run(source string) {
 		return
 	}
 
-	// resolver := Resolver{interpreter: l.interpreter}
-	// resolver.resolve_stmts(statements)
-	// if hadError {
-	// 	return
-	// }
+	resolver := Resolver{interpreter: l.interpreter}
+	resolver.resolve_stmts(statements)
+	if hadError {
+		return
+	}
 
 	err := l.interpreter.interpret(statements)
 	if err != nil {
