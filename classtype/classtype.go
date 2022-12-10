@@ -1,4 +1,4 @@
-package ClassType
+package classtype
 
 type ClassType int64
 

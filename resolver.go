@@ -8,18 +8,18 @@ import (
 type Resolver struct {
 	interpreter     interpreter
 	scopes          []map[string]bool
-	currentFunction FunctionType.FunctionType
+	currentFunction functiontype.FunctionType
 }
 
 func (r *Resolver) NewResolver() Resolver {
 	return Resolver{
 		interpreter:     *NewInterpreter(),
 		scopes:          make([]map[string]bool, 0),
-		currentFunction: FunctionType.NONE,
+		currentFunction: functiontype.NONE,
 	}
 }
 
-var currentClass = ClassType.NONE
+var currentClass = classtype.NONE
 
 func (r *Resolver) stmt_resolve(stmt Stmt) error {
 	switch t := stmt.(type) {
@@ -32,8 +32,7 @@ func (r *Resolver) stmt_resolve(stmt Stmt) error {
 		r.endScope()
 	case *Class:
 		enclosingClass := currentClass
-		currentClass = ClassType.CLASS
-
+		currentClass = classtype.CLASS
 		r.declare(t.name)
 		r.define(t.name)
 
@@ -41,7 +40,7 @@ func (r *Resolver) stmt_resolve(stmt Stmt) error {
 		front := r.scopes[len(r.scopes)-1]
 		front["this"] = true
 		for _, method := range t.methods {
-			declaration := FunctionType.METHOD
+			declaration := functiontype.METHOD
 			err := r.resolveFunction(method, declaration)
 			if err != nil {
 				return err
@@ -58,7 +57,7 @@ func (r *Resolver) stmt_resolve(stmt Stmt) error {
 	case *Function:
 		r.declare(t.name)
 		r.define(t.name)
-		err := r.resolveFunction(*t, FunctionType.FUNCTION)
+		err := r.resolveFunction(*t, functiontype.FUNCTION)
 		if err != nil {
 			return err
 		}
@@ -84,7 +83,7 @@ func (r *Resolver) stmt_resolve(stmt Stmt) error {
 			return nil
 		}
 	case *Return:
-		if r.currentFunction == FunctionType.NONE {
+		if r.currentFunction == functiontype.NONE {
 			tokenError(t.keyword, "Can't return from top-level code.")
 		}
 		if t.value != nil {
@@ -175,7 +174,7 @@ func (r *Resolver) expr_resolve(expr Expr) error {
 			return nil
 		}
 	case *This:
-		if currentClass == ClassType.NONE {
+		if currentClass == classtype.NONE {
 			tokenError(t.keyword, "Can't use 'this' outside of a class.")
 		}
 		r.resolveLocal(t, t.keyword)
@@ -210,7 +209,7 @@ func (r *Resolver) resolve_stmts(stmts []Stmt) error {
 	return nil
 }
 
-func (r *Resolver) resolveFunction(function Function, t FunctionType.FunctionType) error {
+func (r *Resolver) resolveFunction(function Function, t functiontype.FunctionType) error {
 	enclosingFunction := r.currentFunction
 	r.currentFunction = t
 	r.beginScope()

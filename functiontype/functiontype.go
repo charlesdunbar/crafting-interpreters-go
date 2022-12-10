@@ -1,4 +1,4 @@
-package FunctionType
+package functiontype
 
 type FunctionType int64
 
