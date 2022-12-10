@@ -203,7 +203,7 @@ func (i *interpreter) evaluate(expr Expr) (any, error) {
 		if err != nil {
 			return nil, err
 		}
-		if o, ok := object.(*LoxInstance); ok {
+		if o, ok := object.(LoxInstance); ok {
 			return o.get(e.name)
 		} else {
 			return nil, NewRuntimeError(e.name, "Only instances have properties.")
@@ -233,7 +233,7 @@ func (i *interpreter) evaluate(expr Expr) (any, error) {
 		if err != nil {
 			return nil, err
 		}
-		if o, ok := obj.(*LoxInstance); ok {
+		if o, ok := obj.(LoxInstance); ok {
 			value, err := i.evaluate(e.value)
 			if err != nil {
 				return nil, err
