@@ -46,6 +46,10 @@ type Set struct {
 	value  Expr
 }
 
+type This struct {
+	keyword Token
+}
+
 type Unary struct {
 	operator Token
 	right    Expr
@@ -70,6 +74,8 @@ func (e *Literal) Expression() Expr { return e }
 func (e *Logical) Expression() Expr { return e }
 
 func (e *Set) Expression() Expr { return e }
+
+func (e *This) Expression() Expr { return e }
 
 func (e *Unary) Expression() Expr { return e }
 

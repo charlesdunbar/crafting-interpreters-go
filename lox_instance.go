@@ -29,7 +29,7 @@ func (l *LoxInstance) get(name Token) (any, error) {
 	method := l.klass.findMethod(name.lexeme)
 	// If not an empty LoxFunction, return the method
 	if !reflect.ValueOf(method).IsZero() {
-		return method, nil
+		return method.bind(*l), nil
 	}
 	return nil, NewRuntimeError(name, fmt.Sprintf("Undefined property %s.", name.lexeme))
 }

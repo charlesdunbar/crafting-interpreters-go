@@ -249,6 +249,8 @@ func (i *interpreter) evaluate(expr Expr) (any, error) {
 		} else {
 			return nil, NewRuntimeError(e.name, "Only instances have fields.")
 		}
+	case *This:
+		return i.lookUpVariable(e.keyword, e)
 	case *Unary:
 		right, err := i.evaluate(e.right)
 		if err != nil {

@@ -6,14 +6,24 @@ import (
 
 type LoxFunction struct {
 	declaration Function
-	closure Environment
+	closure     Environment
 }
 
 func NewLoxFunction(dec Function, clo Environment) LoxFunction {
 	return LoxFunction{
 		declaration: dec,
-		closure: clo,
+		closure:     clo,
 	}
+}
+
+func (l LoxFunction) bind(instance LoxInstance) LoxFunction {
+	environment := Environment{
+		values:    make(map[string]any),
+		enclosing: &l.closure,
+	}
+	environment.define("this", instance)
+	return NewLoxFunction(l.declaration, environment)
+
 }
 
 // Implement LoxCallable

@@ -1,26 +1,25 @@
 package main
 
-type FunctionType int64
-
-const (
-	NONE FunctionType = iota
-	METHOD
-	FUNCTION
+import (
+	"github.com/charlesdunbar/lox-go/classtype"
+	"github.com/charlesdunbar/lox-go/functiontype"
 )
 
 type Resolver struct {
 	interpreter     interpreter
 	scopes          []map[string]bool
-	currentFunction FunctionType
+	currentFunction FunctionType.FunctionType
 }
 
 func (r *Resolver) NewResolver() Resolver {
 	return Resolver{
 		interpreter:     *NewInterpreter(),
 		scopes:          make([]map[string]bool, 0),
-		currentFunction: NONE,
+		currentFunction: FunctionType.NONE,
 	}
 }
+
+var currentClass = ClassType.NONE
 
 func (r *Resolver) stmt_resolve(stmt Stmt) error {
 	switch t := stmt.(type) {
@@ -32,16 +31,25 @@ func (r *Resolver) stmt_resolve(stmt Stmt) error {
 		}
 		r.endScope()
 	case *Class:
+		enclosingClass := currentClass
+		currentClass = ClassType.CLASS
+
 		r.declare(t.name)
 		r.define(t.name)
 
+		r.beginScope()
+		front := r.scopes[len(r.scopes)-1]
+		front["this"] = true
 		for _, method := range t.methods {
-			declaration := METHOD
+			declaration := FunctionType.METHOD
 			err := r.resolveFunction(method, declaration)
 			if err != nil {
 				return err
 			}
 		}
+		r.endScope()
+
+		currentClass = enclosingClass
 	case *Expression:
 		err := r.expr_resolve(t.expression)
 		if err != nil {
@@ -50,7 +58,7 @@ func (r *Resolver) stmt_resolve(stmt Stmt) error {
 	case *Function:
 		r.declare(t.name)
 		r.define(t.name)
-		err := r.resolveFunction(*t, FUNCTION)
+		err := r.resolveFunction(*t, FunctionType.FUNCTION)
 		if err != nil {
 			return err
 		}
@@ -76,7 +84,7 @@ func (r *Resolver) stmt_resolve(stmt Stmt) error {
 			return nil
 		}
 	case *Return:
-		if r.currentFunction == NONE {
+		if r.currentFunction == FunctionType.NONE {
 			tokenError(t.keyword, "Can't return from top-level code.")
 		}
 		if t.value != nil {
@@ -166,6 +174,11 @@ func (r *Resolver) expr_resolve(expr Expr) error {
 		if err != nil {
 			return nil
 		}
+	case *This:
+		if currentClass == ClassType.NONE {
+			tokenError(t.keyword, "Can't use 'this' outside of a class.")
+		}
+		r.resolveLocal(t, t.keyword)
 	case *Unary:
 		err := r.expr_resolve(t.right)
 		if err != nil {
@@ -197,7 +210,7 @@ func (r *Resolver) resolve_stmts(stmts []Stmt) error {
 	return nil
 }
 
-func (r *Resolver) resolveFunction(function Function, t FunctionType) error {
+func (r *Resolver) resolveFunction(function Function, t FunctionType.FunctionType) error {
 	enclosingFunction := r.currentFunction
 	r.currentFunction = t
 	r.beginScope()
