@@ -60,7 +60,13 @@ func (i *interpreter) execute(stmt Stmt) error {
 		}
 	case *Class:
 		i.environment.define(t.name.lexeme, nil)
-		c := NewLoxClass(t.name.lexeme)
+
+		methods := make(map[string]LoxFunction)
+		for _, method := range t.methods {
+			function := NewLoxFunction(method, *i.environment)
+			methods[method.name.lexeme] = function
+		}
+		c := NewLoxClass(t.name.lexeme, methods)
 		err := i.environment.assign(t.name, c)
 		if err != nil {
 			return err

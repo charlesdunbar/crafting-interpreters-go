@@ -71,6 +71,7 @@ func (p *Parser) classDeclaration() (Stmt, error) {
 	var methods []Function
 	for !p.check(RIGHT_BRACE) && !p.isAtEnd() {
 		meth, err := p.function("method")
+
 		if err != nil {
 			return nil, err
 		}
@@ -100,7 +101,11 @@ func (p *Parser) statement() (Stmt, error) {
 		return p.whileStatement()
 	}
 	if p.match(LEFT_BRACE) {
-		return &Block{p.block()}, nil
+		blo, err := p.block()
+		if err != nil {
+			return nil, err
+		}
+		return &Block{blo}, nil
 	}
 	return p.expressionStatement()
 
@@ -329,20 +334,26 @@ func (p *Parser) function(kind string) (*Function, error) {
 	}
 	p.consume(RIGHT_PAREN, "Expect ')' after parameters.")
 	p.consume(LEFT_BRACE, fmt.Sprintf("Expect '{' before %s body.", kind))
-	body := p.block()
+	body, err := p.block()
+	if err != nil {
+		return nil, err
+	}
 	return &Function{name, params, body}, nil
 }
 
-func (p *Parser) block() []Stmt {
+func (p *Parser) block() ([]Stmt, error) {
 	var statements []Stmt
 
 	for !p.check(RIGHT_BRACE) && !p.isAtEnd() {
-		dec, _ := p.declaration()
+		dec, err := p.declaration()
+		if err != nil {
+			return nil, err
+		}
 		statements = append(statements, dec)
 	}
 
 	p.consume(RIGHT_BRACE, "Expect '}' after block.")
-	return statements
+	return statements, nil
 }
 
 func (p *Parser) assignment() (Expr, error) {

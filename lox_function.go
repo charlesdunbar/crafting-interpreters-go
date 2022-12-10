@@ -9,8 +9,8 @@ type LoxFunction struct {
 	closure Environment
 }
 
-func NewLoxFunction(dec Function, clo Environment) *LoxFunction {
-	return &LoxFunction{
+func NewLoxFunction(dec Function, clo Environment) LoxFunction {
+	return LoxFunction{
 		declaration: dec,
 		closure: clo,
 	}

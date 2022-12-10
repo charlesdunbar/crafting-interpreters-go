@@ -22,7 +22,7 @@ func NewLox() Lox {
 func (l *Lox) RunFile(source string) {
 	f, err := os.ReadFile(source)
 	if err != nil {
-		panic("Error!")
+		panic(fmt.Sprintf("Error! Hit: %+v", err))
 	}
 	l.run(string(f))
 	if hadError {

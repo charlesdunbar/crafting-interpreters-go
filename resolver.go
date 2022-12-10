@@ -4,6 +4,7 @@ type FunctionType int64
 
 const (
 	NONE FunctionType = iota
+	METHOD
 	FUNCTION
 )
 
@@ -33,6 +34,14 @@ func (r *Resolver) stmt_resolve(stmt Stmt) error {
 	case *Class:
 		r.declare(t.name)
 		r.define(t.name)
+
+		for _, method := range t.methods {
+			declaration := METHOD
+			err := r.resolveFunction(method, declaration)
+			if err != nil {
+				return err
+			}
+		}
 	case *Expression:
 		err := r.expr_resolve(t.expression)
 		if err != nil {
@@ -41,7 +50,10 @@ func (r *Resolver) stmt_resolve(stmt Stmt) error {
 	case *Function:
 		r.declare(t.name)
 		r.define(t.name)
-		r.resolveFunction(*t, FUNCTION)
+		err := r.resolveFunction(*t, FUNCTION)
+		if err != nil {
+			return err
+		}
 	case *If:
 		err := r.expr_resolve(t.condition)
 		if err != nil {
@@ -114,7 +126,10 @@ func (r *Resolver) expr_resolve(expr Expr) error {
 			return nil
 		}
 	case *Call:
-		r.expr_resolve(t.callee)
+		err := r.expr_resolve(t.callee)
+		if err != nil {
+			return err
+		}
 		for _, arg := range t.arguments {
 			err := r.expr_resolve(arg)
 			if err != nil {
@@ -182,7 +197,7 @@ func (r *Resolver) resolve_stmts(stmts []Stmt) error {
 	return nil
 }
 
-func (r *Resolver) resolveFunction(function Function, t FunctionType) {
+func (r *Resolver) resolveFunction(function Function, t FunctionType) error {
 	enclosingFunction := r.currentFunction
 	r.currentFunction = t
 	r.beginScope()
@@ -190,9 +205,13 @@ func (r *Resolver) resolveFunction(function Function, t FunctionType) {
 		r.declare(param)
 		r.define(param)
 	}
-	r.resolve_stmts(function.body)
+	err := r.resolve_stmts(function.body)
+	if err != nil {
+		return err
+	}
 	r.endScope()
 	r.currentFunction = enclosingFunction
+	return nil
 }
 
 func (r *Resolver) beginScope() {

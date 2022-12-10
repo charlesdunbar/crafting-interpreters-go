@@ -1,6 +1,9 @@
 package main
 
-import "fmt"
+import (
+	"fmt"
+	"reflect"
+)
 
 type LoxInstance struct {
 	klass  LoxClass
@@ -14,16 +17,21 @@ func NewLoxInstance(klass LoxClass) LoxInstance {
 	}
 }
 
-func (l LoxInstance) String() string {
+func (l *LoxInstance) String() string {
 	return fmt.Sprintf("%s instance", l.klass.name)
 }
 
-func (l LoxInstance) get(name Token) (any, error) {
+func (l *LoxInstance) get(name Token) (any, error) {
 	if _, ok := l.fields[name.lexeme]; ok {
 		return l.fields[name.lexeme], nil
-	} else {
-		return nil, NewRuntimeError(name, fmt.Sprintf("Undefined propert %s.", name.lexeme))
 	}
+
+	method := l.klass.findMethod(name.lexeme)
+	// If not an empty LoxFunction, return the method
+	if !reflect.ValueOf(method).IsZero() {
+		return method, nil
+	}
+	return nil, NewRuntimeError(name, fmt.Sprintf("Undefined property %s.", name.lexeme))
 }
 
 func (l *LoxInstance) set(name Token, value any) {
