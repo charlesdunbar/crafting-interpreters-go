@@ -34,35 +34,64 @@ func (r *Resolver) stmt_resolve(stmt Stmt) error {
 		r.declare(t.name)
 		r.define(t.name)
 	case *Expression:
-		r.expr_resolve(t.expression)
+		err := r.expr_resolve(t.expression)
+		if err != nil {
+			return nil
+		}
 	case *Function:
 		r.declare(t.name)
 		r.define(t.name)
 		r.resolveFunction(*t, FUNCTION)
 	case *If:
-		r.expr_resolve(t.condition)
-		r.stmt_resolve(t.thenBranch)
+		err := r.expr_resolve(t.condition)
+		if err != nil {
+			return nil
+		}
+
+		err = r.stmt_resolve(t.thenBranch)
+		if err != nil {
+			return nil
+		}
 		if t.elseBranch != nil {
-			r.stmt_resolve(t.elseBranch)
+			err = r.stmt_resolve(t.elseBranch)
+			if err != nil {
+				return nil
+			}
 		}
 	case *Print:
-		r.expr_resolve(t.expression)
+		err := r.expr_resolve(t.expression)
+		if err != nil {
+			return nil
+		}
 	case *Return:
 		if r.currentFunction == NONE {
 			tokenError(t.keyword, "Can't return from top-level code.")
 		}
 		if t.value != nil {
-			r.expr_resolve(t.value)
+			err := r.expr_resolve(t.value)
+			if err != nil {
+				return nil
+			}
 		}
 	case *Var:
 		r.declare(t.name)
 		if t.initializer != nil {
-			r.expr_resolve(t.initializer)
+			err := r.expr_resolve(t.initializer)
+			if err != nil {
+				return nil
+			}
 		}
 		r.define(t.name)
 	case *While:
-		r.expr_resolve(t.condition)
-		r.stmt_resolve(t.body)
+		err := r.expr_resolve(t.condition)
+		if err != nil {
+			return nil
+		}
+
+		err = r.stmt_resolve(t.body)
+		if err != nil {
+			return nil
+		}
 	}
 	return nil
 }
@@ -76,22 +105,57 @@ func (r *Resolver) expr_resolve(expr Expr) error {
 		}
 		r.resolveLocal(t, t.name)
 	case *Binary:
-		r.expr_resolve(t.left)
-		r.expr_resolve(t.right)
+		err := r.expr_resolve(t.left)
+		if err != nil {
+			return nil
+		}
+		err = r.expr_resolve(t.right)
+		if err != nil {
+			return nil
+		}
 	case *Call:
 		r.expr_resolve(t.callee)
 		for _, arg := range t.arguments {
-			r.expr_resolve(arg)
+			err := r.expr_resolve(arg)
+			if err != nil {
+				return nil
+			}
+		}
+	case *Get:
+		err := r.expr_resolve(t.object)
+		if err != nil {
+			return err
 		}
 	case *Grouping:
-		r.expr_resolve(t.expression)
+		err := r.expr_resolve(t.expression)
+		if err != nil {
+			return nil
+		}
 	case *Literal:
 		return nil
 	case *Logical:
-		r.expr_resolve(t.left)
-		r.expr_resolve(t.right)
+		err := r.expr_resolve(t.left)
+		if err != nil {
+			return nil
+		}
+		err = r.expr_resolve(t.right)
+		if err != nil {
+			return nil
+		}
+	case *Set:
+		err := r.expr_resolve(t.value)
+		if err != nil {
+			return nil
+		}
+		err = r.expr_resolve(t.object)
+		if err != nil {
+			return nil
+		}
 	case *Unary:
-		r.expr_resolve(t.right)
+		err := r.expr_resolve(t.right)
+		if err != nil {
+			return nil
+		}
 	case *Variable:
 		if len(r.scopes) != 0 {
 			front := r.scopes[len(r.scopes)-1]

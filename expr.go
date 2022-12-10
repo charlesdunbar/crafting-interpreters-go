@@ -21,6 +21,11 @@ type Call struct {
 	arguments []Expr
 }
 
+type Get struct {
+	object Expr
+	name   Token
+}
+
 type Grouping struct {
 	expression Expr
 }
@@ -35,13 +40,19 @@ type Logical struct {
 	right    Expr
 }
 
-type Variable struct {
-	name Token
+type Set struct {
+	object Expr
+	name   Token
+	value  Expr
 }
 
 type Unary struct {
 	operator Token
 	right    Expr
+}
+
+type Variable struct {
+	name Token
 }
 
 func (e *Assign) Expression() Expr { return e }
@@ -50,12 +61,16 @@ func (e *Binary) Expression() Expr { return e }
 
 func (e *Call) Expression() Expr { return e }
 
+func (e *Get) Expression() Expr { return e }
+
 func (e *Grouping) Expression() Expr { return e }
 
 func (e *Literal) Expression() Expr { return e }
 
 func (e *Logical) Expression() Expr { return e }
 
-func (e *Variable) Expression() Expr { return e }
+func (e *Set) Expression() Expr { return e }
 
 func (e *Unary) Expression() Expr { return e }
+
+func (e *Variable) Expression() Expr { return e }

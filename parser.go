@@ -228,7 +228,7 @@ func (p *Parser) returnStatement() (Stmt, error) {
 	var value Expr
 	var err error
 	// If the next thing after 'return' is a semicolon, it can't be an expression
-	if (!p.check(SEMICOLON)) {
+	if !p.check(SEMICOLON) {
 		value, err = p.expression()
 		if err != nil {
 			return nil, err
@@ -359,6 +359,8 @@ func (p *Parser) assignment() (Expr, error) {
 		if v, ok := expr.(*Variable); ok {
 			name := v.name
 			return &Assign{name, value}, nil
+		} else if g, ok := expr.(*Get); ok {
+			return &Set{g.object, g.name, value}, nil
 		}
 		return nil, p.error(equals, "Invalid assignment target.")
 	}
@@ -536,6 +538,12 @@ func (p *Parser) call() (Expr, error) {
 	for {
 		if p.match(LEFT_PAREN) {
 			expr = p.finishCall(expr)
+		} else if p.match(DOT) {
+			name, err := p.consume(IDENTIFIER, "Expect property name after '.'.")
+			if err != nil {
+				return nil, err
+			}
+			expr = &Get{expr, name}
 		} else {
 			break
 		}
