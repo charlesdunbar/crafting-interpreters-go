@@ -63,7 +63,7 @@ func (i *interpreter) execute(stmt Stmt) error {
 
 		methods := make(map[string]LoxFunction)
 		for _, method := range t.methods {
-			function := NewLoxFunction(method, *i.environment)
+			function := NewLoxFunction(method, *i.environment, method.name.lexeme == "init")
 			methods[method.name.lexeme] = function
 		}
 		c := NewLoxClass(t.name.lexeme, methods)
@@ -77,7 +77,7 @@ func (i *interpreter) execute(stmt Stmt) error {
 			return err
 		}
 	case *Function:
-		function := LoxFunction{*t, *i.environment}
+		function := LoxFunction{*t, *i.environment, false}
 		i.environment.define(t.name.lexeme, function)
 	case *If:
 		cond, err := i.evaluate(t.condition)
@@ -391,6 +391,6 @@ func (i *interpreter) stringify(object any) string {
 		}
 		return text
 	}
-	return fmt.Sprintf("%v", object)
+	return fmt.Sprintf("%+v", object)
 
 }

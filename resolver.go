@@ -41,6 +41,9 @@ func (r *Resolver) stmt_resolve(stmt Stmt) error {
 		front["this"] = true
 		for _, method := range t.methods {
 			declaration := functiontype.METHOD
+			if method.name.lexeme == "init" {
+				declaration = functiontype.INITIALIZER
+			}
 			err := r.resolveFunction(method, declaration)
 			if err != nil {
 				return err
@@ -87,6 +90,9 @@ func (r *Resolver) stmt_resolve(stmt Stmt) error {
 			tokenError(t.keyword, "Can't return from top-level code.")
 		}
 		if t.value != nil {
+			if r.currentFunction == functiontype.INITIALIZER {
+				tokenError(t.keyword, "Can't return a value from an initializer.")
+			}
 			err := r.expr_resolve(t.value)
 			if err != nil {
 				return nil

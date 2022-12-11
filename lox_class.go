@@ -1,5 +1,7 @@
 package main
 
+import "errors"
+
 type LoxClass struct {
 	name    string
 	methods map[string]LoxFunction
@@ -12,11 +14,11 @@ func NewLoxClass(name string, methods map[string]LoxFunction) LoxClass {
 	}
 }
 
-func (l LoxClass) findMethod(name string) LoxFunction {
+func (l LoxClass) findMethod(name string) (LoxFunction, error) {
 	if _, ok := l.methods[name]; ok {
-		return l.methods[name]
+		return l.methods[name], nil
 	}
-	return LoxFunction{}
+	return LoxFunction{}, errors.New("method not found")
 }
 
 func (l LoxClass) String() string {
@@ -25,9 +27,17 @@ func (l LoxClass) String() string {
 
 func (l LoxClass) call(inter *interpreter, args []any) (any, error) {
 	instance := NewLoxInstance(l)
+	initalizer, err := l.findMethod("init")
+	if err == nil {
+		initalizer.bind(instance).call(inter, args)
+	}
 	return instance, nil
 }
 
 func (l LoxClass) arity() int {
-	return 0
+	initalizer, err := l.findMethod("init")
+	if err != nil {
+		return 0
+	}
+	return initalizer.arity()
 }
