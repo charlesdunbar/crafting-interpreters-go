@@ -39,6 +39,9 @@ func (p *Parser) parse() []Stmt {
 }
 
 func (p *Parser) declaration() (Stmt, error) {
+	if p.match(CLASS) {
+		return p.classDeclaration()
+	}
 	if p.match(FUN) {
 		return p.function("function")
 	}
@@ -53,6 +56,32 @@ func (p *Parser) declaration() (Stmt, error) {
 		return nil, err
 	}
 	return state, nil
+}
+
+func (p *Parser) classDeclaration() (Stmt, error) {
+	name, err := p.consume(IDENTIFIER, "Expect class name")
+	if err != nil {
+		return nil, err
+	}
+	_, err = p.consume(LEFT_BRACE, "Expect '{' before class body.")
+	if err != nil {
+		return nil, err
+	}
+
+	var methods []Function
+	for !p.check(RIGHT_BRACE) && !p.isAtEnd() {
+		meth, err := p.function("method")
+
+		if err != nil {
+			return nil, err
+		}
+		methods = append(methods, *meth)
+	}
+	_, err = p.consume(RIGHT_BRACE, "Expect '}' after class body.")
+	if err != nil {
+		return nil, err
+	}
+	return &Class{name: name, methods: methods}, nil
 }
 
 func (p *Parser) statement() (Stmt, error) {
@@ -72,7 +101,11 @@ func (p *Parser) statement() (Stmt, error) {
 		return p.whileStatement()
 	}
 	if p.match(LEFT_BRACE) {
-		return &Block{p.block()}, nil
+		blo, err := p.block()
+		if err != nil {
+			return nil, err
+		}
+		return &Block{blo}, nil
 	}
 	return p.expressionStatement()
 
@@ -200,7 +233,7 @@ func (p *Parser) returnStatement() (Stmt, error) {
 	var value Expr
 	var err error
 	// If the next thing after 'return' is a semicolon, it can't be an expression
-	if (!p.check(SEMICOLON)) {
+	if !p.check(SEMICOLON) {
 		value, err = p.expression()
 		if err != nil {
 			return nil, err
@@ -301,20 +334,26 @@ func (p *Parser) function(kind string) (*Function, error) {
 	}
 	p.consume(RIGHT_PAREN, "Expect ')' after parameters.")
 	p.consume(LEFT_BRACE, fmt.Sprintf("Expect '{' before %s body.", kind))
-	body := p.block()
+	body, err := p.block()
+	if err != nil {
+		return nil, err
+	}
 	return &Function{name, params, body}, nil
 }
 
-func (p *Parser) block() []Stmt {
+func (p *Parser) block() ([]Stmt, error) {
 	var statements []Stmt
 
 	for !p.check(RIGHT_BRACE) && !p.isAtEnd() {
-		dec, _ := p.declaration()
+		dec, err := p.declaration()
+		if err != nil {
+			return nil, err
+		}
 		statements = append(statements, dec)
 	}
 
 	p.consume(RIGHT_BRACE, "Expect '}' after block.")
-	return statements
+	return statements, nil
 }
 
 func (p *Parser) assignment() (Expr, error) {
@@ -331,6 +370,8 @@ func (p *Parser) assignment() (Expr, error) {
 		if v, ok := expr.(*Variable); ok {
 			name := v.name
 			return &Assign{name, value}, nil
+		} else if g, ok := expr.(*Get); ok {
+			return &Set{g.object, g.name, value}, nil
 		}
 		return nil, p.error(equals, "Invalid assignment target.")
 	}
@@ -508,6 +549,12 @@ func (p *Parser) call() (Expr, error) {
 	for {
 		if p.match(LEFT_PAREN) {
 			expr = p.finishCall(expr)
+		} else if p.match(DOT) {
+			name, err := p.consume(IDENTIFIER, "Expect property name after '.'.")
+			if err != nil {
+				return nil, err
+			}
+			expr = &Get{expr, name}
 		} else {
 			break
 		}
@@ -529,6 +576,10 @@ func (p *Parser) primary() (Expr, error) {
 
 	if p.match(NUMBER, STRING) {
 		return &Literal{p.previous().literal}, nil
+	}
+
+	if p.match(THIS) {
+		return &This{p.previous()}, nil
 	}
 
 	if p.match(IDENTIFIER) {

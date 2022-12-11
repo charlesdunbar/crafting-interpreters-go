@@ -58,13 +58,26 @@ func (i *interpreter) execute(stmt Stmt) error {
 		if err != nil {
 			return err
 		}
+	case *Class:
+		i.environment.define(t.name.lexeme, nil)
+
+		methods := make(map[string]LoxFunction)
+		for _, method := range t.methods {
+			function := NewLoxFunction(method, *i.environment, method.name.lexeme == "init")
+			methods[method.name.lexeme] = function
+		}
+		c := NewLoxClass(t.name.lexeme, methods)
+		err := i.environment.assign(t.name, c)
+		if err != nil {
+			return err
+		}
 	case *Expression:
 		_, err := i.evaluate(t.expression)
 		if err != nil {
 			return err
 		}
 	case *Function:
-		function := LoxFunction{*t, *i.environment}
+		function := LoxFunction{*t, *i.environment, false}
 		i.environment.define(t.name.lexeme, function)
 	case *If:
 		cond, err := i.evaluate(t.condition)
@@ -179,7 +192,7 @@ func (i *interpreter) evaluate(expr Expr) (any, error) {
 		// Don't allow trying to call "foobar"()
 		local_func, ok := callee.(LoxCallable)
 		if !ok {
-			return nil, NewRuntimeError(e.paren, "Can only call functions and classes.")
+			return nil, NewRuntimeError(e.paren, fmt.Sprintf("Can only call functions and classes. Got data of type %T", callee))
 		}
 
 		// Check arity of the function
@@ -191,6 +204,16 @@ func (i *interpreter) evaluate(expr Expr) (any, error) {
 			return nil, err
 		}
 		return ret, nil
+	case *Get:
+		object, err := i.evaluate(e.object)
+		if err != nil {
+			return nil, err
+		}
+		if o, ok := object.(LoxInstance); ok {
+			return o.get(e.name)
+		} else {
+			return nil, NewRuntimeError(e.name, "Only instances have properties.")
+		}
 	case *Literal:
 		return e.value, nil
 	case *Logical:
@@ -211,6 +234,23 @@ func (i *interpreter) evaluate(expr Expr) (any, error) {
 			}
 		}
 		return i.evaluate(e.right)
+	case *Set:
+		obj, err := i.evaluate(e.object)
+		if err != nil {
+			return nil, err
+		}
+		if o, ok := obj.(LoxInstance); ok {
+			value, err := i.evaluate(e.value)
+			if err != nil {
+				return nil, err
+			}
+			o.set(e.name, value)
+			return value, nil
+		} else {
+			return nil, NewRuntimeError(e.name, "Only instances have fields.")
+		}
+	case *This:
+		return i.lookUpVariable(e.keyword, e)
 	case *Unary:
 		right, err := i.evaluate(e.right)
 		if err != nil {
@@ -280,7 +320,7 @@ func (i *interpreter) evaluate(expr Expr) (any, error) {
 					return l + r, nil
 				}
 			}
-			return nil, &RuntimeError{e.operator, "operands must be two numbers or two strings."}
+			return nil, NewRuntimeError(e.operator, "operands must be two numbers or two strings.")
 		case SLASH:
 			return left.(float64) / right.(float64), nil
 		case STAR:
@@ -325,7 +365,7 @@ func (i *interpreter) isEqual(a, b any) bool {
 func (i *interpreter) checkNumberOperand(operator Token, operand any) (float64, error) {
 	o, ok := operand.(float64)
 	if !ok {
-		return 0, &RuntimeError{operator, "operand must be a number."}
+		return 0, NewRuntimeError(operator, "operand must be a number.")
 	}
 	return o, nil
 }
@@ -334,7 +374,7 @@ func (i *interpreter) checkNumberOperands(operator Token, left, right any) (floa
 	l, ok := left.(float64)
 	r, ok2 := right.(float64)
 	if !ok || !ok2 {
-		return 0, 0, &RuntimeError{operator, "operands must be a number."}
+		return 0, 0, NewRuntimeError(operator, "operands must be a number.")
 	}
 	return l, r, nil
 }
@@ -351,6 +391,6 @@ func (i *interpreter) stringify(object any) string {
 		}
 		return text
 	}
-	return fmt.Sprintf("%v", object)
+	return fmt.Sprintf("%+v", object)
 
 }

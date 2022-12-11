@@ -89,4 +89,3 @@ func TestMatch(t *testing.T) {
 		t.Errorf("Match was incorrect, got %t, expected %t", got, false)
 	}
 }
-

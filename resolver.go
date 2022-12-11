@@ -1,25 +1,25 @@
 package main
 
-type FunctionType int64
-
-const (
-	NONE FunctionType = iota
-	FUNCTION
+import (
+	"github.com/charlesdunbar/lox-go/classtype"
+	"github.com/charlesdunbar/lox-go/functiontype"
 )
 
 type Resolver struct {
 	interpreter     interpreter
 	scopes          []map[string]bool
-	currentFunction FunctionType
+	currentFunction functiontype.FunctionType
 }
 
 func (r *Resolver) NewResolver() Resolver {
 	return Resolver{
 		interpreter:     *NewInterpreter(),
 		scopes:          make([]map[string]bool, 0),
-		currentFunction: NONE,
+		currentFunction: functiontype.NONE,
 	}
 }
+
+var currentClass = classtype.NONE
 
 func (r *Resolver) stmt_resolve(stmt Stmt) error {
 	switch t := stmt.(type) {
@@ -30,36 +30,93 @@ func (r *Resolver) stmt_resolve(stmt Stmt) error {
 			return err
 		}
 		r.endScope()
+	case *Class:
+		enclosingClass := currentClass
+		currentClass = classtype.CLASS
+		r.declare(t.name)
+		r.define(t.name)
+
+		r.beginScope()
+		front := r.scopes[len(r.scopes)-1]
+		front["this"] = true
+		for _, method := range t.methods {
+			declaration := functiontype.METHOD
+			if method.name.lexeme == "init" {
+				declaration = functiontype.INITIALIZER
+			}
+			err := r.resolveFunction(method, declaration)
+			if err != nil {
+				return err
+			}
+		}
+		r.endScope()
+
+		currentClass = enclosingClass
 	case *Expression:
-		r.expr_resolve(t.expression)
+		err := r.expr_resolve(t.expression)
+		if err != nil {
+			return nil
+		}
 	case *Function:
 		r.declare(t.name)
 		r.define(t.name)
-		r.resolveFunction(*t, FUNCTION)
+		err := r.resolveFunction(*t, functiontype.FUNCTION)
+		if err != nil {
+			return err
+		}
 	case *If:
-		r.expr_resolve(t.condition)
-		r.stmt_resolve(t.thenBranch)
+		err := r.expr_resolve(t.condition)
+		if err != nil {
+			return nil
+		}
+
+		err = r.stmt_resolve(t.thenBranch)
+		if err != nil {
+			return nil
+		}
 		if t.elseBranch != nil {
-			r.stmt_resolve(t.elseBranch)
+			err = r.stmt_resolve(t.elseBranch)
+			if err != nil {
+				return nil
+			}
 		}
 	case *Print:
-		r.expr_resolve(t.expression)
+		err := r.expr_resolve(t.expression)
+		if err != nil {
+			return nil
+		}
 	case *Return:
-		if r.currentFunction == NONE {
+		if r.currentFunction == functiontype.NONE {
 			tokenError(t.keyword, "Can't return from top-level code.")
 		}
 		if t.value != nil {
-			r.expr_resolve(t.value)
+			if r.currentFunction == functiontype.INITIALIZER {
+				tokenError(t.keyword, "Can't return a value from an initializer.")
+			}
+			err := r.expr_resolve(t.value)
+			if err != nil {
+				return nil
+			}
 		}
 	case *Var:
 		r.declare(t.name)
 		if t.initializer != nil {
-			r.expr_resolve(t.initializer)
+			err := r.expr_resolve(t.initializer)
+			if err != nil {
+				return nil
+			}
 		}
 		r.define(t.name)
 	case *While:
-		r.expr_resolve(t.condition)
-		r.stmt_resolve(t.body)
+		err := r.expr_resolve(t.condition)
+		if err != nil {
+			return nil
+		}
+
+		err = r.stmt_resolve(t.body)
+		if err != nil {
+			return nil
+		}
 	}
 	return nil
 }
@@ -73,22 +130,65 @@ func (r *Resolver) expr_resolve(expr Expr) error {
 		}
 		r.resolveLocal(t, t.name)
 	case *Binary:
-		r.expr_resolve(t.left)
-		r.expr_resolve(t.right)
+		err := r.expr_resolve(t.left)
+		if err != nil {
+			return nil
+		}
+		err = r.expr_resolve(t.right)
+		if err != nil {
+			return nil
+		}
 	case *Call:
-		r.expr_resolve(t.callee)
+		err := r.expr_resolve(t.callee)
+		if err != nil {
+			return err
+		}
 		for _, arg := range t.arguments {
-			r.expr_resolve(arg)
+			err := r.expr_resolve(arg)
+			if err != nil {
+				return nil
+			}
+		}
+	case *Get:
+		err := r.expr_resolve(t.object)
+		if err != nil {
+			return err
 		}
 	case *Grouping:
-		r.expr_resolve(t.expression)
+		err := r.expr_resolve(t.expression)
+		if err != nil {
+			return nil
+		}
 	case *Literal:
 		return nil
 	case *Logical:
-		r.expr_resolve(t.left)
-		r.expr_resolve(t.right)
+		err := r.expr_resolve(t.left)
+		if err != nil {
+			return nil
+		}
+		err = r.expr_resolve(t.right)
+		if err != nil {
+			return nil
+		}
+	case *Set:
+		err := r.expr_resolve(t.value)
+		if err != nil {
+			return nil
+		}
+		err = r.expr_resolve(t.object)
+		if err != nil {
+			return nil
+		}
+	case *This:
+		if currentClass == classtype.NONE {
+			tokenError(t.keyword, "Can't use 'this' outside of a class.")
+		}
+		r.resolveLocal(t, t.keyword)
 	case *Unary:
-		r.expr_resolve(t.right)
+		err := r.expr_resolve(t.right)
+		if err != nil {
+			return nil
+		}
 	case *Variable:
 		if len(r.scopes) != 0 {
 			front := r.scopes[len(r.scopes)-1]
@@ -115,7 +215,7 @@ func (r *Resolver) resolve_stmts(stmts []Stmt) error {
 	return nil
 }
 
-func (r *Resolver) resolveFunction(function Function, t FunctionType) {
+func (r *Resolver) resolveFunction(function Function, t functiontype.FunctionType) error {
 	enclosingFunction := r.currentFunction
 	r.currentFunction = t
 	r.beginScope()
@@ -123,9 +223,13 @@ func (r *Resolver) resolveFunction(function Function, t FunctionType) {
 		r.declare(param)
 		r.define(param)
 	}
-	r.resolve_stmts(function.body)
+	err := r.resolve_stmts(function.body)
+	if err != nil {
+		return err
+	}
 	r.endScope()
 	r.currentFunction = enclosingFunction
+	return nil
 }
 
 func (r *Resolver) beginScope() {

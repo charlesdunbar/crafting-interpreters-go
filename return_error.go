@@ -1,6 +1,5 @@
 package main
 
-
 type ReturnError struct {
 	value any
 }
