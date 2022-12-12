@@ -46,6 +46,11 @@ type Set struct {
 	value  Expr
 }
 
+type Super struct {
+	keyword Token
+	method  Token
+}
+
 type This struct {
 	keyword Token
 }
@@ -74,6 +79,8 @@ func (e *Literal) Expression() Expr { return e }
 func (e *Logical) Expression() Expr { return e }
 
 func (e *Set) Expression() Expr { return e }
+
+func (e *Super) Expression() Expr { return e }
 
 func (e *This) Expression() Expr { return e }
 

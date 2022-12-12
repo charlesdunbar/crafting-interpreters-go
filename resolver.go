@@ -40,10 +40,18 @@ func (r *Resolver) stmt_resolve(stmt Stmt) error {
 		}
 
 		if t.superclass != (Variable{}) {
+			currentClass = classtype.SUBCLASS
 			err := r.expr_resolve(&t.superclass)
 			if err != nil {
 				return err
 			}
+		}
+
+		// Deal with super keyword
+		if t.superclass != (Variable{}) {
+			r.beginScope()
+			front := r.scopes[len(r.scopes)-1]
+			front["super"] = true
 		}
 
 		r.beginScope()
@@ -60,6 +68,10 @@ func (r *Resolver) stmt_resolve(stmt Stmt) error {
 			}
 		}
 		r.endScope()
+
+		if t.superclass != (Variable{}) {
+			r.endScope()
+		}
 
 		currentClass = enclosingClass
 	case *Expression:
@@ -189,6 +201,13 @@ func (r *Resolver) expr_resolve(expr Expr) error {
 		if err != nil {
 			return nil
 		}
+	case *Super:
+		if currentClass == classtype.NONE {
+			tokenError(t.keyword, "Can't use 'super' outside of a class.")
+		} else if  currentClass != classtype.SUBCLASS {
+			tokenError(t.keyword, "Can't use 'super' in a class with no superclass.")
+		}
+		r.resolveLocal(t, t.keyword)
 	case *This:
 		if currentClass == classtype.NONE {
 			tokenError(t.keyword, "Can't use 'this' outside of a class.")
@@ -270,6 +289,7 @@ func (r *Resolver) define(name Token) {
 
 }
 
+// Stores the environment distance away from the expression
 func (r *Resolver) resolveLocal(expr Expr, name Token) {
 	for i := len(r.scopes) - 1; i >= 0; i-- {
 		scope := r.scopes[i]
