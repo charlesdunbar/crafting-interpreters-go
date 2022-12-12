@@ -59,14 +59,43 @@ func (i *interpreter) execute(stmt Stmt) error {
 			return err
 		}
 	case *Class:
+		var superclass any
+		if t.superclass != (Variable{}) {
+			var err error
+			superclass, err = i.evaluate(&t.superclass)
+			if err != nil {
+				return err
+			}
+			if _, ok := superclass.(LoxClass); !ok {
+				return NewRuntimeError(t.superclass.name, "Superclass must be a class.")
+			}
+		}
 		i.environment.define(t.name.lexeme, nil)
+
+		if t.superclass != (Variable{}) {
+			i.environment = &Environment{
+				values:    make(map[string]any),
+				enclosing: i.environment,
+			}
+			i.environment.define("super", superclass)
+		}
 
 		methods := make(map[string]LoxFunction)
 		for _, method := range t.methods {
 			function := NewLoxFunction(method, *i.environment, method.name.lexeme == "init")
 			methods[method.name.lexeme] = function
 		}
-		c := NewLoxClass(t.name.lexeme, methods)
+		var c LoxClass
+		if sc, ok := superclass.(LoxClass); ok {
+			c = NewLoxClass(t.name.lexeme, &sc, methods)
+		} else {
+			c = NewLoxClass(t.name.lexeme, nil, methods)
+		}
+
+		if t.superclass != (Variable{}) {
+			i.environment = i.environment.enclosing
+		}
+
 		err := i.environment.assign(t.name, c)
 		if err != nil {
 			return err
@@ -249,6 +278,17 @@ func (i *interpreter) evaluate(expr Expr) (any, error) {
 		} else {
 			return nil, NewRuntimeError(e.name, "Only instances have fields.")
 		}
+	case *Super:
+		distance := i.locals[e]
+		sc := i.environment.getAt(distance, "super").(LoxClass)
+		// We know this is always 1 away from super
+		object := i.environment.getAt(distance-1, "this").(LoxInstance)
+
+		method, err := sc.findMethod(e.method.lexeme)
+		if err != nil {
+			return nil, NewRuntimeError(e.method, fmt.Sprintf("Undefined property %s.", e.method.lexeme))
+		}
+		return method.bind(object), nil
 	case *This:
 		return i.lookUpVariable(e.keyword, e)
 	case *Unary:

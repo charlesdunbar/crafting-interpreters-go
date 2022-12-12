@@ -3,14 +3,16 @@ package main
 import "errors"
 
 type LoxClass struct {
-	name    string
-	methods map[string]LoxFunction
+	name       string
+	superclass *LoxClass
+	methods    map[string]LoxFunction
 }
 
-func NewLoxClass(name string, methods map[string]LoxFunction) LoxClass {
+func NewLoxClass(name string, superclass *LoxClass, methods map[string]LoxFunction) LoxClass {
 	return LoxClass{
-		name:    name,
-		methods: methods,
+		name:       name,
+		superclass: superclass,
+		methods:    methods,
 	}
 }
 
@@ -18,6 +20,11 @@ func (l LoxClass) findMethod(name string) (LoxFunction, error) {
 	if _, ok := l.methods[name]; ok {
 		return l.methods[name], nil
 	}
+
+	if l.superclass != nil {
+		return l.superclass.findMethod(name)
+	}
+
 	return LoxFunction{}, errors.New("method not found")
 }
 
