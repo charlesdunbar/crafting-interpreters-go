@@ -20,6 +20,11 @@ func (l LoxClass) findMethod(name string) (LoxFunction, error) {
 	if _, ok := l.methods[name]; ok {
 		return l.methods[name], nil
 	}
+
+	if l.superclass != nil {
+		return l.superclass.findMethod(name)
+	}
+
 	return LoxFunction{}, errors.New("method not found")
 }
 

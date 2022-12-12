@@ -66,7 +66,7 @@ func (i *interpreter) execute(stmt Stmt) error {
 			if err != nil {
 				return err
 			}
-			if _, ok := superclass.(*LoxClass); !ok {
+			if _, ok := superclass.(LoxClass); !ok {
 				return NewRuntimeError(t.superclass.name, "Superclass must be a class.")
 			}
 		}
@@ -77,7 +77,12 @@ func (i *interpreter) execute(stmt Stmt) error {
 			function := NewLoxFunction(method, *i.environment, method.name.lexeme == "init")
 			methods[method.name.lexeme] = function
 		}
-		c := NewLoxClass(t.name.lexeme, superclass.(*LoxClass), methods)
+		var c LoxClass
+		if sc, ok := superclass.(LoxClass); ok {
+			c = NewLoxClass(t.name.lexeme, &sc, methods)
+		} else {
+			c = NewLoxClass(t.name.lexeme, nil, methods)
+		}
 		err := i.environment.assign(t.name, c)
 		if err != nil {
 			return err
