@@ -35,6 +35,16 @@ func (r *Resolver) stmt_resolve(stmt Stmt) error {
 		currentClass = classtype.CLASS
 		r.declare(t.name)
 		r.define(t.name)
+		if t.superclass != (Variable{}) && t.name.lexeme == t.superclass.name.lexeme {
+			tokenError(t.superclass.name, "A class can't inherit from itself.")
+		}
+
+		if t.superclass != (Variable{}) {
+			err := r.expr_resolve(&t.superclass)
+			if err != nil {
+				return err
+			}
+		}
 
 		r.beginScope()
 		front := r.scopes[len(r.scopes)-1]

@@ -59,6 +59,17 @@ func (i *interpreter) execute(stmt Stmt) error {
 			return err
 		}
 	case *Class:
+		var superclass any
+		if t.superclass != (Variable{}) {
+			var err error
+			superclass, err = i.evaluate(&t.superclass)
+			if err != nil {
+				return err
+			}
+			if _, ok := superclass.(*LoxClass); !ok {
+				return NewRuntimeError(t.superclass.name, "Superclass must be a class.")
+			}
+		}
 		i.environment.define(t.name.lexeme, nil)
 
 		methods := make(map[string]LoxFunction)
@@ -66,7 +77,7 @@ func (i *interpreter) execute(stmt Stmt) error {
 			function := NewLoxFunction(method, *i.environment, method.name.lexeme == "init")
 			methods[method.name.lexeme] = function
 		}
-		c := NewLoxClass(t.name.lexeme, methods)
+		c := NewLoxClass(t.name.lexeme, superclass.(*LoxClass), methods)
 		err := i.environment.assign(t.name, c)
 		if err != nil {
 			return err
